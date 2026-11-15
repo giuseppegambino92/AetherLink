@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">AetherLink</string>
+    <string name="main_activity_title">AetherLink</string>
+    <string name="share_channel">Condivisione schermo</string>
+    <string name="share_notification_title">Stai condividendo lo schermo</string>
+    <string name="share_notification_text">AetherLink sta trasmettendo il tuo schermo a un dispositivo collegato.</string>
+    <string name="share_stop">Interrompi</string>
+    <string name="hid_channel">Controller Bluetooth</string>
+    <string name="hid_notification_title">Tastiera e trackpad Bluetooth attivi</string>
+    <string name="hid_notification_text">Questo telefono funziona da tastiera e mouse per un dispositivo associato.</string>
+    <string name="hid_sdp_name">Tastiera e trackpad AetherLink</string>
+    <string name="hid_sdp_description">Controller tastiera e puntatore</string>
+    <string name="accessibility_label">Controllo remoto AetherLink</string>
+    <string name="accessibility_description">Consente a un dispositivo collegato tramite AetherLink di toccare, scorrere, scrivere e usare Indietro/Home/App recenti su questo telefono. AetherLink esegue gesti solo durante una sessione remota che hai approvato e non legge né salva i contenuti dello schermo.</string>
+</resources>

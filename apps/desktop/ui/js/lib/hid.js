@@ -1,0 +1,101 @@
+// W3C KeyboardEvent.code → USB HID usage (page 0x07).
+// Mirrors `aether_protocol::HidUsage::from_dom_code` exactly; keep in sync.
+
+const FIXED = {
+  Enter: 0x28, NumpadEnter: 0x28,
+  Escape: 0x29,
+  Backspace: 0x2a,
+  Tab: 0x2b,
+  Space: 0x2c,
+  Minus: 0x2d,
+  Equal: 0x2e,
+  BracketLeft: 0x2f,
+  BracketRight: 0x30,
+  Backslash: 0x31,
+  Semicolon: 0x33,
+  Quote: 0x34,
+  Backquote: 0x35,
+  Comma: 0x36,
+  Period: 0x37,
+  Slash: 0x38,
+  CapsLock: 0x39,
+  PrintScreen: 0x46,
+  ScrollLock: 0x47,
+  Pause: 0x48,
+  Insert: 0x49,
+  Home: 0x4a,
+  PageUp: 0x4b,
+  Delete: 0x4c,
+  End: 0x4d,
+  PageDown: 0x4e,
+  ArrowRight: 0x4f,
+  ArrowLeft: 0x50,
+  ArrowDown: 0x51,
+  ArrowUp: 0x52,
+  NumLock: 0x53,
+  IntlBackslash: 0x64,
+  ContextMenu: 0x65,
+  AudioVolumeMute: 0x7f,
+  AudioVolumeUp: 0x80,
+  AudioVolumeDown: 0x81,
+  ControlLeft: 0xe0,
+  ShiftLeft: 0xe1,
+  AltLeft: 0xe2,
+  MetaLeft: 0xe3, OSLeft: 0xe3,
+  ControlRight: 0xe4,
+  ShiftRight: 0xe5,
+  AltRight: 0xe6,
+  MetaRight: 0xe7, OSRight: 0xe7,
+};
+
+const NUMPAD = { Divide: 0x54, Multiply: 0x55, Subtract: 0x56, Add: 0x57, Decimal: 0x63, 0: 0x62 };
+
+/** @returns {number|null} HID usage id, or null when unmapped. */
+export function domCodeToHid(code) {
+  if (Object.prototype.hasOwnProperty.call(FIXED, code)) return FIXED[code];
+  let m = /^Key([A-Z])$/.exec(code);
+  if (m) return 0x04 + (m[1].charCodeAt(0) - 65);
+  if (code.startsWith('Key')) return null;
+  m = /^Digit([0-9])$/.exec(code);
+  if (m) {
+    const n = Number(m[1]);
+    return n === 0 ? 0x27 : 0x1e + (n - 1);
+  }
+  if (code.startsWith('Digit')) return null;
+  m = /^F([0-9]+)$/.exec(code);
+  if (m) {
+    const n = Number(m[1]);
+    if (n >= 1 && n <= 12) return 0x3a + n - 1;
+    if (n >= 13 && n <= 24) return 0x68 + n - 13;
+    return null;
+  }
+  if (code.startsWith('Numpad')) {
+    const rest = code.slice(6);
+    if (Object.prototype.hasOwnProperty.call(NUMPAD, rest)) return NUMPAD[rest];
+    if (/^[1-9]$/.test(rest)) return 0x59 + (Number(rest) - 1);
+    return null;
+  }
+  return null;
+}
+
+/** HID boot-protocol modifier byte: Ctrl 0x01, Shift 0x02, Alt 0x04, Meta 0x08. */
+export function modifiersOf(e) {
+  return (e.ctrlKey ? 0x01 : 0) | (e.shiftKey ? 0x02 : 0) | (e.altKey ? 0x04 : 0) | (e.metaKey ? 0x08 : 0);
+}
+
+// ---- InputEvent builders: serde's externally-tagged JSON for aether_protocol::InputEvent.
+// Newtypes HidUsage(u16)/Modifiers(u8) serialize as plain numbers; field names are snake_case.
+export const InputEvents = {
+  mouseMove: (displayId, x, y) => ({ MouseMove: { display_id: displayId >>> 0, x, y } }),
+  mouseButton: (button, pressed) => ({ MouseButton: { button, pressed } }),
+  scroll: (dx, dy, unit, phase = null) => ({ Scroll: { dx, dy, unit, phase } }),
+  key: (code, pressed, modifiers) => ({ Key: { code, pressed, modifiers } }),
+  text: (text) => ({ Text: { text } }),
+  system: (action) => ({ System: action }),
+  releaseAll: () => 'ReleaseAll',
+};
+
+/** DOM MouseEvent.button → aether_protocol::MouseButton variant. */
+export function mouseButtonName(button) {
+  return ['Left', 'Middle', 'Right', 'Back', 'Forward'][button] || null;
+}

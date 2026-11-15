@@ -1,0 +1,3 @@
+"broadcast.appNotRunning" = "Open AetherLink and tap “Share this device” first.";
+"broadcast.appClosed" = "AetherLink was closed, so screen sharing stopped.";
+"broadcast.stoppedFromApp" = "Screen sharing was stopped from AetherLink.";

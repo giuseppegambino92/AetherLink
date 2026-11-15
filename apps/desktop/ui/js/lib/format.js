@@ -1,0 +1,95 @@
+// Formatting helpers (locale-aware where it matters).
+import { getLocale } from '../i18n.js';
+
+/** Digits only, max 9. */
+export function idDigits(value) {
+  return String(value ?? '').replace(/\D+/g, '').slice(0, 9);
+}
+
+/** "123456789" → ["123","456","789"] (partial input supported). */
+export function idGroups(value) {
+  const d = idDigits(value);
+  return [d.slice(0, 3), d.slice(3, 6), d.slice(6, 9)].filter(Boolean);
+}
+
+/** Display form "123 456 789". */
+export function formatIdSpaced(value) {
+  return idGroups(value).join(' ');
+}
+
+/** Input form "123-456-789" (auto-format while typing). */
+export function formatIdDashed(value) {
+  return idGroups(value).join('-');
+}
+
+export function isValidId(value) {
+  const d = idDigits(value);
+  return d.length === 9 && d[0] !== '0';
+}
+
+/** Accept epoch seconds, epoch ms or ISO strings → ms epoch (or null). */
+export function toEpochMs(v) {
+  if (v === null || v === undefined || v === '') return null;
+  if (typeof v === 'number') return v < 1e12 ? v * 1000 : v;
+  const n = Number(v);
+  if (Number.isFinite(n)) return n < 1e12 ? n * 1000 : n;
+  const p = Date.parse(v);
+  return Number.isFinite(p) ? p : null;
+}
+
+export function formatBytes(n) {
+  const v = Number(n) || 0;
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let i = 0;
+  let x = v;
+  while (x >= 1024 && i < units.length - 1) {
+    x /= 1024;
+    i++;
+  }
+  const nf = new Intl.NumberFormat(getLocale(), { maximumFractionDigits: x < 10 && i > 0 ? 1 : 0 });
+  return `${nf.format(x)} ${units[i]}`;
+}
+
+export function formatNumber(n, digits = 0) {
+  return new Intl.NumberFormat(getLocale(), { maximumFractionDigits: digits, minimumFractionDigits: digits }).format(Number(n) || 0);
+}
+
+/** mm:ss for countdowns / timeline. */
+export function formatClock(totalSeconds) {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+}
+
+/** Relative time ("3 minutes ago"), localized by Intl. */
+export function formatRelative(epochMs) {
+  if (!epochMs) return '';
+  const diff = (epochMs - Date.now()) / 1000;
+  const rtf = new Intl.RelativeTimeFormat(getLocale(), { numeric: 'auto' });
+  const abs = Math.abs(diff);
+  if (abs < 60) return rtf.format(Math.round(diff), 'second');
+  if (abs < 3600) return rtf.format(Math.round(diff / 60), 'minute');
+  if (abs < 86400) return rtf.format(Math.round(diff / 3600), 'hour');
+  return rtf.format(Math.round(diff / 86400), 'day');
+}
+
+/** Fingerprint pretty-print: group hex into blocks of 4 separated by thin gaps. */
+export function formatFingerprint(fp) {
+  if (!fp) return '';
+  if (Array.isArray(fp)) fp = fp.map((b) => Number(b).toString(16).padStart(2, '0')).join('');
+  const s = String(fp).replace(/[^0-9a-fA-F]/g, '').toUpperCase();
+  if (!s) return String(fp);
+  return s.match(/.{1,4}/g).join(' · ');
+}
+
+/** Normalize OS identifiers from the engine (`MacOs`, `macos`, …). */
+export function osKey(os) {
+  const k = String(os || '').toLowerCase().replace(/[^a-z]/g, '');
+  if (k.startsWith('mac')) return 'macos';
+  if (k.startsWith('win')) return 'windows';
+  if (k.startsWith('linux')) return 'linux';
+  if (k.startsWith('android')) return 'android';
+  if (k === 'ios' || k.startsWith('iphone') || k.startsWith('ipad')) return 'ios';
+  return 'unknown';
+}

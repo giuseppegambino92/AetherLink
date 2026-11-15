@@ -1,0 +1,46 @@
+[package]
+name = "aether-dom"
+description = "AetherLink semantic UI tree: accessibility-tree providers, revisioned tree mirror with diffs and fuzzy search"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+aether-protocol.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+unicode-normalization = "0.1"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+aether-input.workspace = true
+core-foundation = "0.10"
+core-foundation-sys = "0.8"
+libc = "0.2"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+atspi = { version = "0.30", default-features = false, features = ["proxies"] }
+zbus = { version = "5.5", default-features = false, features = ["async-io"] }
+futures = { workspace = true }
+async-io = "2"
+x11rb = "0.14"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+aether-input.workspace = true
+windows = { version = "0.62", features = [
+    "Wdk_System_Threading",
+    "Win32_Foundation",
+    "Win32_System_Com",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_Kernel",
+    "Win32_System_Ole",
+    "Win32_System_Threading",
+    "Win32_System_Variant",
+    "Win32_UI_Accessibility",
+    "Win32_UI_Shell",
+    "Win32_UI_Shell_Common",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[dev-dependencies]
+serde_json.workspace = true

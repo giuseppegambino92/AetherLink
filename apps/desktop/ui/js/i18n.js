@@ -1,0 +1,115 @@
+// i18n: every visible string, tooltip, aria-label and error message is a
+// key in locales/{en,it}.json. Supports {name} interpolation and CLDR plural
+// categories (key.one / key.other / …) via Intl.PluralRules.
+
+export const SUPPORTED = ['en', 'it'];
+const STORAGE_KEY = 'aetherlink.locale';
+
+let locale = 'en';
+let table = {};
+let fallback = {};
+const listeners = new Set();
+const cache = new Map();
+
+async function load(code) {
+  if (cache.has(code)) return cache.get(code);
+  const url = new URL(`../locales/${code}.json`, import.meta.url);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`locale ${code}: HTTP ${res.status}`);
+  const json = await res.json();
+  cache.set(code, json);
+  return json;
+}
+
+export function detectLocale() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved && SUPPORTED.includes(saved)) return saved;
+  } catch {
+    /* storage unavailable */
+  }
+  const nav = (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
+  return nav.toLowerCase().startsWith('it') ? 'it' : 'en';
+}
+
+export async function initI18n() {
+  fallback = await load('en');
+  locale = detectLocale();
+  table = locale === 'en' ? fallback : await load(locale);
+  document.documentElement.lang = locale;
+}
+
+export const getLocale = () => locale;
+
+function lookup(obj, key) {
+  let cur = obj;
+  for (const part of key.split('.')) {
+    if (cur === null || typeof cur !== 'object' || !(part in cur)) return undefined;
+    cur = cur[part];
+  }
+  return typeof cur === 'string' ? cur : undefined;
+}
+
+function interpolate(str, params) {
+  if (!params) return str;
+  return str.replace(/\{(\w+)\}/g, (m, k) => (params[k] !== undefined && params[k] !== null ? String(params[k]) : m));
+}
+
+/** Translate `key` with optional `{param}` interpolation. */
+export function t(key, params) {
+  const s = lookup(table, key) ?? lookup(fallback, key);
+  if (s === undefined) {
+    console.warn(`[i18n] missing key: ${key}`);
+    return key;
+  }
+  return interpolate(s, params);
+}
+
+/** Plural-aware translate: looks up `key.<category>` (falls back to `key.other`). `{count}` is injected. */
+export function tp(key, count, params = {}) {
+  const cat = new Intl.PluralRules(locale).select(count);
+  const p = { count: new Intl.NumberFormat(locale).format(count), ...params };
+  const s = lookup(table, `${key}.${cat}`) ?? lookup(table, `${key}.other`) ?? lookup(fallback, `${key}.${cat}`) ?? lookup(fallback, `${key}.other`);
+  if (s === undefined) {
+    console.warn(`[i18n] missing plural key: ${key}`);
+    return key;
+  }
+  return interpolate(s, p);
+}
+
+/** Re-translate every [data-i18n] / [data-i18n-attr] node under `root`. */
+export function apply(root = document) {
+  for (const el of root.querySelectorAll('[data-i18n]')) {
+    const args = el.dataset.i18nArgs ? JSON.parse(el.dataset.i18nArgs) : undefined;
+    el.textContent = t(el.dataset.i18n, args);
+  }
+  for (const el of root.querySelectorAll('[data-i18n-attr]')) {
+    const args = el.dataset.i18nArgs ? JSON.parse(el.dataset.i18nArgs) : undefined;
+    for (const pair of el.dataset.i18nAttr.split(';')) {
+      const [attr, key] = pair.split(':');
+      if (attr && key) el.setAttribute(attr, t(key, args));
+    }
+  }
+}
+
+/** Switch language instantly; persists the choice and notifies listeners. */
+export async function setLocale(code) {
+  if (!SUPPORTED.includes(code)) return;
+  try {
+    localStorage.setItem(STORAGE_KEY, code);
+  } catch {
+    /* storage unavailable */
+  }
+  if (code === locale) return;
+  table = code === 'en' ? fallback : await load(code);
+  locale = code;
+  document.documentElement.lang = code;
+  apply(document);
+  for (const fn of listeners) fn(code);
+}
+
+/** Subscribe to locale changes (for views that compute strings, e.g. plurals). Returns an unsubscribe fn. */
+export function onLocaleChange(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}

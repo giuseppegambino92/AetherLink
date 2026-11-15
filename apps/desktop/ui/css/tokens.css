@@ -1,0 +1,116 @@
+/* AetherLink design tokens.
+ * Base: deep ink #0B0E14, layered translucent glass, 1px specular hairlines,
+ * soft directional light. Accent hues are cool and desaturated on purpose. */
+:root {
+  color-scheme: dark;
+
+  /* ---- canvas & light sources */
+  --ink-0: #07090d;
+  --ink-1: #0b0e14;
+  --ink-2: #10141c;
+  --ink-3: #161b26;
+  --light-a: rgba(108, 160, 255, 0.16);   /* cool key light, top-left */
+  --light-b: rgba(139, 123, 255, 0.10);   /* violet fill, bottom-right */
+  --light-c: rgba(125, 224, 214, 0.07);   /* aqua rim */
+
+  /* ---- glass surfaces (back → front) */
+  --glass-0: rgba(16, 20, 28, 0.42);
+  --glass-1: rgba(22, 27, 38, 0.56);
+  --glass-2: rgba(30, 36, 50, 0.64);
+  --glass-3: rgba(42, 50, 68, 0.72);
+  --glass-hover: rgba(255, 255, 255, 0.035);
+  --glass-press: rgba(255, 255, 255, 0.06);
+  --scrim: rgba(4, 6, 10, 0.55);
+
+  --hairline: rgba(255, 255, 255, 0.07);
+  --hairline-strong: rgba(255, 255, 255, 0.12);
+  --hairline-inner: rgba(255, 255, 255, 0.045);
+  --specular: linear-gradient(180deg, rgba(255, 255, 255, 0.075) 0%, rgba(255, 255, 255, 0.015) 38%, rgba(255, 255, 255, 0) 60%);
+  --specular-edge: inset 0 1px 0 rgba(255, 255, 255, 0.06), inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+
+  --blur-1: blur(18px) saturate(150%);
+  --blur-2: blur(32px) saturate(170%);
+  --blur-3: blur(56px) saturate(190%);
+
+  /* ---- text */
+  --text-1: rgba(243, 246, 252, 0.96);
+  --text-2: rgba(208, 217, 232, 0.70);
+  --text-3: rgba(182, 194, 214, 0.46);
+  --text-4: rgba(170, 182, 204, 0.30);
+  --text-on-accent: #07101f;
+
+  /* ---- accents */
+  --accent: #8ab8ff;
+  --accent-strong: #6ea4ff;
+  --accent-soft: rgba(138, 184, 255, 0.14);
+  --accent-glow: rgba(110, 164, 255, 0.35);
+  --aqua: #7de0d6;
+  --violet: #a597ff;
+  --success: #64d6a0;
+  --success-soft: rgba(100, 214, 160, 0.14);
+  --warning: #f2c46d;
+  --warning-soft: rgba(242, 196, 109, 0.14);
+  --danger: #ff8089;
+  --danger-soft: rgba(255, 128, 137, 0.14);
+
+  --gradient-accent: linear-gradient(135deg, #a8d0ff 0%, #7aa9ff 45%, #8f80ff 100%);
+  --gradient-ring: conic-gradient(from 210deg, #7de0d6, #8ab8ff, #a597ff, #7de0d6);
+
+  /* ---- type */
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter Display", "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+
+  --fs-11: 11px;
+  --fs-12: 12px;
+  --fs-13: 13px;
+  --fs-14: 14px;
+  --fs-16: 16px;
+  --fs-20: 20px;
+  --fs-24: 24px;
+  --fs-34: 34px;
+  --fs-44: 44px;
+
+  /* ---- shape & space */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-7: 32px;
+  --s-8: 40px;
+  --s-9: 56px;
+
+  /* ---- elevation (layered: contact + ambient + specular) */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.28), 0 6px 18px -8px rgba(0, 0, 0, 0.45);
+  --shadow-2: 0 2px 4px rgba(0, 0, 0, 0.25), 0 14px 32px -12px rgba(0, 0, 0, 0.55), 0 32px 64px -32px rgba(0, 0, 0, 0.5);
+  --shadow-3: 0 4px 10px rgba(0, 0, 0, 0.30), 0 28px 60px -18px rgba(0, 0, 0, 0.65), 0 60px 120px -40px rgba(0, 0, 0, 0.55);
+  --focus-ring: 0 0 0 1px rgba(138, 184, 255, 0.65), 0 0 0 4px rgba(138, 184, 255, 0.18);
+
+  /* ---- layout */
+  --titlebar-h: 52px;
+  --sidebar-w: 236px;
+
+  /* ---- motion (CSS fallbacks; JS springs drive the expressive bits) */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-1: 120ms;
+  --dur-2: 220ms;
+  --dur-3: 420ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-1: 0ms;
+    --dur-2: 0ms;
+    --dur-3: 0ms;
+  }
+}

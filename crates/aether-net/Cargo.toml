@@ -1,0 +1,42 @@
+[package]
+name = "aether-net"
+description = "AetherLink networking: Ed25519 identity, QUIC transport, SPAKE2 auth, LAN discovery, NAT traversal & relay client, port tunnels"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+aether-protocol.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+tokio.workspace = true
+bytes.workspace = true
+futures.workspace = true
+rand.workspace = true
+blake3.workspace = true
+parking_lot.workspace = true
+
+quinn = { version = "0.11", default-features = false, features = ["runtime-tokio", "rustls-ring", "log"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "logging", "tls12"] }
+rcgen = { version = "0.13", default-features = false, features = ["ring", "pem"] }
+ed25519-dalek = { version = "2", features = ["rand_core", "zeroize"] }
+spake2 = "0.4"
+subtle = "2.6"
+zeroize = "1"
+mdns-sd = "0.21"
+if-addrs = "0.13"
+listeners = "0.6"
+hex = "0.4"
+socket2 = "0.5"
+
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+keyring = { version = "3", features = ["apple-native"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3", features = ["windows-native"] }
+
+[dev-dependencies]
+tempfile.workspace = true
+tokio = { workspace = true, features = ["full", "test-util"] }

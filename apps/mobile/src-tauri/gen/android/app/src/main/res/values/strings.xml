@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">AetherLink</string>
+    <string name="main_activity_title">AetherLink</string>
+    <string name="share_channel">Screen sharing</string>
+    <string name="share_notification_title">Sharing this screen</string>
+    <string name="share_notification_text">AetherLink is streaming your screen to a connected device.</string>
+    <string name="share_stop">Stop</string>
+    <string name="hid_channel">Bluetooth controller</string>
+    <string name="hid_notification_title">Bluetooth keyboard and trackpad active</string>
+    <string name="hid_notification_text">This phone is acting as a keyboard and mouse for a paired device.</string>
+    <string name="hid_sdp_name">AetherLink Keyboard &amp; Trackpad</string>
+    <string name="hid_sdp_description">Keyboard and pointer controller</string>
+    <string name="accessibility_label">AetherLink remote control</string>
+    <string name="accessibility_description">Lets a device you connected through AetherLink tap, swipe, type and use Back/Home/Recents on this phone. AetherLink only performs gestures while a remote session you approved is active; it does not read or store your screen content.</string>
+</resources>

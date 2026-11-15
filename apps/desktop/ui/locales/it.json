@@ -1,0 +1,545 @@
+{
+  "app": {
+    "name": "AetherLink",
+    "tagline": "Desktop remoto peer-to-peer"
+  },
+  "language": {
+    "en": "English",
+    "it": "Italiano"
+  },
+  "preview": {
+    "ribbon": "Anteprima di sviluppo — dati di esempio, motore non collegato"
+  },
+  "nav": {
+    "aria": "Navigazione principale",
+    "home": "Home",
+    "devices": "Dispositivi",
+    "drives": "Unità virtuali",
+    "settings": "Impostazioni",
+    "iphone": "Controlla iPhone"
+  },
+  "common": {
+    "cancel": "Annulla",
+    "close": "Chiudi",
+    "connect": "Connetti",
+    "copied": "Copiato negli appunti",
+    "copy": "Copia",
+    "done": "Fine",
+    "retry": "Riprova",
+    "seeAll": "Mostra tutti"
+  },
+  "keys": {
+    "ctrl": "Ctrl",
+    "alt": "Alt",
+    "shift": "Maiusc",
+    "super": "Win",
+    "space": "Spazio",
+    "esc": "esc"
+  },
+  "engine": {
+    "notWiredTitle": "Motore non collegato",
+    "notWiredBody": "In questa build il motore di AetherLink non è ancora attivo. Questo pannello si animerà non appena lo sarà.",
+    "chipNotWired": "Motore offline",
+    "chipError": "Errore del motore",
+    "chipStarting": "Avvio in corso…",
+    "chipReady": "Pronto a ricevere connessioni",
+    "chipPaused": "Connessioni in entrata sospese"
+  },
+  "errors": {
+    "engineNotWired": "Il motore di AetherLink non è ancora collegato.",
+    "invalidDecision": "Questa risposta non è valida per la richiesta.",
+    "unsupportedLocale": "Questa lingua non è disponibile.",
+    "notFound": "Non abbiamo trovato il dispositivo o l’elemento.",
+    "unauthorized": "Password errata, oppure l’altra parte ha rifiutato la richiesta.",
+    "timeout": "L’altro dispositivo non ha risposto in tempo.",
+    "unsupported": "Funzione non supportata su quel dispositivo.",
+    "permissionDenied": "macOS ha bloccato l’operazione. Controlla i permessi in Impostazioni.",
+    "offline": "Il dispositivo è offline.",
+    "generic": "Si è verificato un problema: {detail}",
+    "tryAgain": "Riprova tra qualche istante.",
+    "copyFailed": "Impossibile copiare negli appunti.",
+    "bootFailed": "AetherLink non è riuscito ad avviare l’interfaccia",
+    "capturePermission": "Il computer remoto non ha ancora consentito la registrazione dello schermo. Chiedi al proprietario di abilitare AetherLink in Impostazioni di Sistema → Privacy e sicurezza → Registrazione schermo.",
+    "captureUnavailable": "Al momento non è possibile acquisire lo schermo remoto.",
+    "clipboard": "Non è stato possibile sincronizzare gli appunti.",
+    "inputPermission": "Il computer remoto non consente ancora il controllo. Chiedi al proprietario di abilitare AetherLink in Accessibilità.",
+    "invalid": "Richiesta non valida.",
+    "invalidTarget": "Inserisci un ID di 9 cifre o un indirizzo come host:porta.",
+    "io": "Un'operazione su file o disco non è riuscita.",
+    "network": "La connessione si è interrotta.",
+    "peerNotFound": "Nessun dispositivo raggiungibile con questo ID. Controlla l'ID o configura un server relay nelle Impostazioni.",
+    "resolve": "Impossibile trovare questo indirizzo.",
+    "sessionNotFound": "Questa sessione è già terminata.",
+    "terminal": "Impossibile avviare il terminale remoto.",
+    "virtualDisplayUnsupported": "I display virtuali non sono ancora disponibili su questo host.",
+    "wrongPassword": "Password errata. Controlla la password monouso mostrata sull'altro dispositivo.",
+    "audioUnavailable": "Al momento non è possibile catturare l’audio del computer remoto.",
+    "audioPermission": "Il computer remoto non ha ancora consentito la cattura dell’audio. Su un Mac, chiedi al proprietario di abilitare AetherLink in Impostazioni di Sistema → Privacy e sicurezza → Registrazione schermo e audio di sistema.",
+    "audioOutputUnavailable": "Su questo computer non è disponibile alcun dispositivo di uscita audio.",
+    "audioOutputNotFound": "Quel dispositivo di uscita audio non è più disponibile.",
+    "hidNotStarted": "Avvia prima il controllo dell'iPhone."
+  },
+  "os": {
+    "macos": "macOS",
+    "windows": "Windows",
+    "linux": "Linux",
+    "android": "Android",
+    "ios": "iOS",
+    "unknown": "Sistema sconosciuto"
+  },
+  "dashboard": {
+    "home": {
+      "title": "Home",
+      "subtitle": "Condividi questo Mac o raggiungi un altro dispositivo: connessione diretta, cifrata end-to-end."
+    },
+    "identity": {
+      "title": "Questo dispositivo",
+      "subtitle": "Comunica ID e password monouso solo a persone di cui ti fidi",
+      "yourId": "Il tuo ID",
+      "copyId": "Copia ID",
+      "idCopied": "ID copiato",
+      "fingerprint": "Impronta della chiave",
+      "oneTimePassword": "Password monouso",
+      "expiresIn": "Tempo rimanente prima del cambio password",
+      "showPassword": "Mostra password",
+      "hidePassword": "Nascondi password",
+      "copyPassword": "Copia password",
+      "passwordCopied": "Password copiata",
+      "regenerate": "Nuova password",
+      "scanToPair": "Inquadra per abbinare",
+      "unavailable": "Identità non disponibile"
+    },
+    "quickConnect": {
+      "title": "Connessione rapida",
+      "subtitle": "Raggiungi qualsiasi dispositivo con il suo ID a 9 cifre",
+      "placeholder": "123-456-789",
+      "idLabel": "ID del partner",
+      "passwordPlaceholder": "Password monouso (facoltativa)",
+      "passwordLabel": "Password monouso",
+      "connect": "Connetti",
+      "hint": "I dispositivi attendibili si connettono senza password.",
+      "invalid": "Gli ID hanno 9 cifre e non iniziano mai con 0.",
+      "recent": "Recenti"
+    },
+    "radar": {
+      "title": "Nelle vicinanze",
+      "subtitle": "Dispositivi AetherLink sulla tua rete locale",
+      "aria": "Radar dei dispositivi sulla rete locale",
+      "found": {
+        "one": "{count} dispositivo",
+        "other": "{count} dispositivi"
+      },
+      "emptyTitle": "In ascolto dei dispositivi vicini",
+      "emptyBody": "I dispositivi con AetherLink su questa rete compariranno qui.",
+      "unavailable": "Rilevamento locale non disponibile"
+    },
+    "host": {
+      "title": "Connessi a questo dispositivo",
+      "subtitle": "Chi sta guardando o controllando questo Mac in questo momento",
+      "emptyTitle": "Nessuno è connesso",
+      "emptyBody": "Quando qualcuno si connette lo vedrai qui e potrai disconnetterlo in qualsiasi momento.",
+      "notListening": "Le connessioni in entrata sono sospese.",
+      "since": "Connesso {when}",
+      "kick": "Disconnetti",
+      "kickTitle": "Disconnettere {name}?",
+      "kickBody": "Verrà rimosso subito da questo dispositivo e potrà riconnettersi solo con una nuova password o se è attendibile.",
+      "unavailable": "Stato delle sessioni non disponibile",
+      "activeCount": {
+        "one": "{count} connessione attiva",
+        "other": "{count} connessioni attive"
+      }
+    },
+    "devices": {
+      "title": "Accesso non presidiato"
+    },
+    "palette": {
+      "button": "Connetti a…",
+      "open": "Apri Connessione rapida",
+      "placeholder": "Digita un nome o un ID a 9 cifre",
+      "empty": "Nessun dispositivo corrispondente. Digita un ID completo per connetterti direttamente.",
+      "connectTo": "Connetti a {id}",
+      "directHint": "Connessione diretta tramite ID",
+      "trusted": "Attendibile",
+      "lan": "Su questa rete",
+      "recent": "Recente"
+    }
+  },
+  "devices": {
+    "title": "Dispositivi",
+    "subtitle": "I dispositivi attendibili che raggiungi senza password, più tutto ciò che hai intorno.",
+    "connectNew": "Nuova connessione",
+    "online": "Online",
+    "offline": "Offline",
+    "lastSeen": "Visto {when}",
+    "remove": "Rimuovi dispositivo",
+    "removeTitle": "Rimuovere {name}?",
+    "removeBody": "Non potrai più raggiungerlo con l’accesso non presidiato. Potrai abbinarlo di nuovo in seguito.",
+    "removed": "{name} rimosso",
+    "emptyTitle": "Ancora nessun dispositivo attendibile",
+    "emptyBody": "Quando ti connetti a un dispositivo scegli «Accetta e considera attendibile» per raggiungerlo in seguito senza password.",
+    "unavailable": "Dispositivi non disponibili"
+  },
+  "drives": {
+    "title": "Unità virtuali",
+    "subtitle": "Monta le cartelle di altri dispositivi come se fossero locali e scegli cosa condividere.",
+    "readOnly": "Sola lettura",
+    "readWrite": "Lettura e scrittura",
+    "copyPath": "Copia percorso di montaggio",
+    "unmount": "Espelli",
+    "unmounted": "{name} espulsa",
+    "mounted": {
+      "title": "Unità montate",
+      "subtitle": "Cartelle remote disponibili nel Finder",
+      "emptyTitle": "Nessuna unità montata",
+      "emptyBody": "Durante una sessione usa il pulsante dell’unità nella barra strumenti per montare una cartella condivisa.",
+      "unavailable": "Unità montate non disponibili"
+    },
+    "shares": {
+      "title": "Condivise da questo Mac",
+      "subtitle": "Cartelle che i dispositivi connessi possono montare",
+      "pathPlaceholder": "/Users/tuonome/Progetti",
+      "pathLabel": "Percorso della cartella",
+      "add": "Condividi",
+      "added": "Ora condividi {name}",
+      "remove": "Interrompi condivisione",
+      "readOnly": "Condividi in sola lettura",
+      "drop": "Trascina qui una cartella per condividerla",
+      "emptyTitle": "Ancora nessuna condivisione",
+      "emptyBody": "Aggiungi una cartella per consentire ai dispositivi connessi di montarla.",
+      "unavailable": "Cartelle condivise non disponibili"
+    }
+  },
+  "settings": {
+    "title": "Impostazioni",
+    "subtitle": "Permessi, privacy e comportamento di AetherLink.",
+    "saved": "Impostazioni salvate",
+    "loadFailed": "Impossibile caricare le impostazioni. Per ora non è possibile modificarle.",
+    "engineSettingsUnavailable": "Le impostazioni del motore saranno modificabili quando il motore sarà collegato. La lingua si cambia subito.",
+    "permissions": {
+      "title": "Controllo dei permessi",
+      "subtitle": "macOS li richiede perché altri possano vedere e controllare questo Mac",
+      "allGood": "Tutto a posto",
+      "missing": {
+        "one": "Manca {count} permesso",
+        "other": "Mancano {count} permessi"
+      },
+      "openSettings": "Apri Impostazioni",
+      "unavailable": "Stato dei permessi non disponibile",
+      "status": {
+        "granted": "Consentito",
+        "denied": "Non consentito",
+        "notApplicable": "Non necessario"
+      },
+      "screenRecording": {
+        "title": "Registrazione schermo",
+        "body": "Permette ai dispositivi connessi di vedere il tuo schermo."
+      },
+      "accessibility": {
+        "title": "Accessibilità",
+        "body": "Permette ai dispositivi connessi di muovere il puntatore, digitare e usare la ricerca semantica."
+      },
+      "inputMonitoring": {
+        "title": "Monitoraggio input",
+        "body": "Intercetta in modo affidabile le scorciatoie da tastiera mentre controlli un altro dispositivo."
+      }
+    },
+    "preferences": {
+      "title": "Preferenze",
+      "subtitle": "Lingua, appunti, relay e accesso"
+    },
+    "language": {
+      "title": "Lingua",
+      "body": "Cambia all’istante, anche nella barra dei menu."
+    },
+    "clipboard": {
+      "title": "Appunti condivisi",
+      "body": "Scegli come copia e incolla passano da un dispositivo all’altro.",
+      "disabled": "Disattivati",
+      "pushOnly": "Solo invio",
+      "bidirectional": "In entrambe le direzioni"
+    },
+    "relay": {
+      "title": "Server relay",
+      "body": "Usato solo quando non è possibile una connessione diretta. Il traffico resta cifrato end-to-end.",
+      "placeholder": "relay.esempio.it:21116"
+    },
+    "unattended": {
+      "title": "Accesso non presidiato",
+      "body": "I dispositivi attendibili possono connettersi anche se nessuno è davanti a questo Mac."
+    },
+    "consent": {
+      "title": "Chiedi prima di accettare",
+      "body": "Mostra una conferma ogni volta che un nuovo dispositivo vuole connettersi."
+    },
+    "hotkeys": {
+      "title": "Abbreviazioni da tastiera",
+      "subtitle": "Scorciatoie gestite da AetherLink anziché dal dispositivo remoto",
+      "hud": "Mostra o nascondi la barra della sessione",
+      "hudBody": "Funziona quando una finestra di sessione è in primo piano.",
+      "change": "Modifica",
+      "recording": "Premi la nuova combinazione…",
+      "updated": "Scorciatoia aggiornata",
+      "palette": "Ricerca semantica durante una sessione",
+      "terminal": "Terminale remoto",
+      "quickConnect": "Connessione rapida dalla dashboard"
+    }
+  },
+  "consent": {
+    "badge": "Richiesta in arrivo",
+    "title": "{name} vuole connettersi",
+    "body": "Potrà vedere questo schermo e controllarlo. Accetta solo se sai di chi si tratta.",
+    "verifyHint": "Se puoi, verifica l’impronta insieme a lui, al telefono o di persona.",
+    "accept": "Accetta",
+    "acceptTrust": "Accetta e considera attendibile",
+    "deny": "Rifiuta",
+    "autoDeny": "Rifiuto automatico tra {seconds} s"
+  },
+  "palette": {
+    "semanticPlaceholder": "Cerca pulsanti, menu e campi sullo schermo remoto",
+    "noResults": "Nessuna corrispondenza sullo schermo remoto.",
+    "navigate": "sposta",
+    "press": "premi",
+    "connect": "connetti",
+    "typeInto": "scrivi nel campo",
+    "tabToType": "Premi Tab per scrivere in questo campo",
+    "typingInto": "Scrivi in: {label}",
+    "typePlaceholder": "Digita il testo, poi premi Invio",
+    "close": "chiudi",
+    "unnamed": "Elemento senza nome"
+  },
+  "roles": {
+    "Window": "Finestra",
+    "Button": "Pulsante",
+    "Link": "Link",
+    "TextField": "Campo di testo",
+    "TextArea": "Area di testo",
+    "SearchField": "Campo di ricerca",
+    "CheckBox": "Casella di controllo",
+    "RadioButton": "Pulsante di opzione",
+    "Switch": "Interruttore",
+    "Slider": "Cursore",
+    "ComboBox": "Casella combinata",
+    "PopUpButton": "Menu a comparsa",
+    "Menu": "Menu",
+    "MenuItem": "Voce di menu",
+    "MenuBar": "Barra dei menu",
+    "Tab": "Scheda",
+    "TabGroup": "Gruppo di schede",
+    "List": "Elenco",
+    "ListItem": "Voce di elenco",
+    "Table": "Tabella",
+    "Row": "Riga",
+    "Cell": "Cella",
+    "Tree": "Struttura ad albero",
+    "TreeItem": "Nodo",
+    "Toolbar": "Barra strumenti",
+    "Image": "Immagine",
+    "StaticText": "Testo",
+    "Heading": "Intestazione",
+    "Group": "Gruppo",
+    "ScrollArea": "Area scorrevole",
+    "WebArea": "Pagina web",
+    "Dialog": "Finestra di dialogo",
+    "Other": "Elemento"
+  },
+  "session": {
+    "windowTitle": "{name} — AetherLink",
+    "noPending": "Questa finestra non ha nessuna sessione da aprire. Avviane una dalla dashboard.",
+    "closed": "La sessione è terminata.",
+    "closedReason": "La sessione è terminata: {reason}",
+    "displayN": "Schermo {n}",
+    "noDisplays": "Elenco degli schermi non ancora disponibile",
+    "noShares": "Questo dispositivo non condivide nessuna cartella.",
+    "mounted": "Montata in {path}",
+    "ghost": "Modalità Fantasma",
+    "ghostOn": "Modalità Fantasma attiva: lo schermo remoto è oscurato",
+    "ghostOff": "Modalità Fantasma disattivata",
+    "losslessOn": "Testo senza perdita attivo (4:4:4)",
+    "losslessOff": "Testo senza perdita disattivato",
+    "state": {
+      "connecting": "Connessione a {name}…",
+      "authenticating": "Verifica di {name}…",
+      "connected": "Connesso",
+      "reconnecting": "Connessione persa, nuovo tentativo…",
+      "failed": "Connessione non riuscita"
+    },
+    "decoder": {
+      "webcodecs-unavailable": "La decodifica video non è disponibile in questa finestra.",
+      "codec-unsupported": "Questo Mac non riesce a decodificare il formato video remoto ({detail}).",
+      "decode-failed": "Intoppo nella decodifica video: in attesa del prossimo fotogramma chiave."
+    },
+    "hud": {
+      "aria": "Barra della sessione",
+      "display": "Schermi",
+      "lossless": "Testo senza perdita (4:4:4)",
+      "audio": "Audio remoto — attiva / disattiva l’audio",
+      "audioMenu": "Opzioni audio",
+      "drives": "Monta una cartella condivisa",
+      "ports": "Inoltro porte",
+      "terminal": "Terminale",
+      "search": "Ricerca semantica (⌘K)",
+      "dvr": "DVR Time-Travel",
+      "ghost": "Modalità Fantasma",
+      "pip": "Mappa degli schermi",
+      "telemetry": "Frequenza fotogrammi, latenza e bitrate",
+      "disconnect": "Disconnetti"
+    },
+    "audio": {
+      "title": "Audio remoto",
+      "stream": "Riproduci l’audio del computer remoto",
+      "volume": "Volume",
+      "percent": "{n}%",
+      "mute": "Silenzia",
+      "output": "Uscita",
+      "systemDefault": "Predefinita di sistema",
+      "onToast": "Audio remoto attivo",
+      "mutedToast": "Audio remoto silenziato",
+      "stats": "{kbps} kbps · buffer di {delay} ms · {lost} pacchetti ricostruiti"
+    },
+    "telemetry": {
+      "fps": "fps",
+      "ms": "ms",
+      "mbps": "Mb/s"
+    },
+    "virtual": {
+      "title": "Display virtuale",
+      "fhd": "Aggiungi display Full HD",
+      "qhd": "Aggiungi display QHD",
+      "ultrawide": "Aggiungi display ultrawide 32:9",
+      "remove": "Rimuovi display virtuale",
+      "name": "Display virtuale {w}×{h}",
+      "creating": "Creazione del display virtuale sull'host…"
+    }
+  },
+  "ports": {
+    "title": "Inoltro porte",
+    "subtitle": "Raggiungi i servizi in esecuzione sul dispositivo remoto",
+    "scan": "Analizza",
+    "forwardToggle": "Inoltra questa porta",
+    "copyAddress": "Copia indirizzo locale",
+    "unknownService": "Servizio sconosciuto",
+    "pid": "PID {pid}",
+    "emptyTitle": "Nessuna porta in ascolto",
+    "emptyBody": "Avvia un server sul dispositivo remoto, poi ripeti l’analisi."
+  },
+  "terminal": {
+    "title": "Terminale",
+    "connecting": "Apertura della shell…",
+    "end": "Chiudi shell",
+    "hide": "Nascondi terminale"
+  },
+  "dvr": {
+    "title": "Time-Travel",
+    "timeline": "Cronologia della sessione",
+    "live": "LIVE",
+    "backToLive": "Torna in diretta",
+    "pause": "Pausa",
+    "resume": "Riprendi la diretta",
+    "ocr": "Copia testo",
+    "ocrTitle": "Testo sullo schermo",
+    "ocrEmpty": "In questo fotogramma non è stato riconosciuto alcun testo.",
+    "windowLength": "Registrati gli ultimi {duration}",
+    "behindLive": "{time} indietro rispetto alla diretta",
+    "kinds": {
+      "Keyframe": "Fotogramma chiave",
+      "Clipboard": "Appunti",
+      "Terminal": "Terminale",
+      "FileTransfer": "Trasferimento file",
+      "ResourceSpike": "Picco di risorse",
+      "Alert": "Avviso",
+      "Input": "Input"
+    }
+  },
+  "transfer": {
+    "dropTo": "Rilascia per inviare a {name}",
+    "preparing": "Preparazione…",
+    "progress": "{done} di {total}",
+    "failed": "Trasferimento non riuscito",
+    "sendingCount": {
+      "one": "Invio di {count} file",
+      "other": "Invio di {count} file"
+    },
+    "sentCount": {
+      "one": "{count} file inviato",
+      "other": "{count} file inviati"
+    }
+  },
+  "pip": {
+    "title": "Mappa degli schermi",
+    "zoomIn": "Ingrandisci",
+    "zoomOut": "Riduci",
+    "fit": "Adatta alla finestra",
+    "follow": "Segui il puntatore"
+  },
+  "tray": {
+    "idLabel": "ID {id}",
+    "idUnknown": "ID non ancora disponibile",
+    "copyId": "Copia ID",
+    "connections": {
+      "one": "{count} connessione attiva",
+      "other": "{count} connessioni attive"
+    },
+    "quickConnect": "Connessione rapida…",
+    "ghostMode": "Modalità Fantasma",
+    "language": "Lingua",
+    "show": "Apri AetherLink",
+    "quit": "Esci da AetherLink"
+  },
+  "hid": {
+    "title": "Controlla iPhone e iPad",
+    "subtitle": "iOS non si può controllare via software: AetherLink presenta questo computer come tastiera e trackpad Bluetooth.",
+    "connect": {
+      "title": "Connessione",
+      "subtitle": "Scegli come questo computer si presenta all'iPhone o all'iPad."
+    },
+    "backend": {
+      "label": "Metodo",
+      "mac": "Bluetooth di questo Mac",
+      "bluez": "Bluetooth di questo computer (BlueZ)",
+      "dongle": "Dongle HID AetherLink (ESP32-S3)",
+      "none": "Nessun metodo disponibile",
+      "noneBody": "Attiva il Bluetooth o collega il dongle AetherLink, poi torna qui."
+    },
+    "target": {
+      "label": "Dispositivo",
+      "iphone": "iPhone",
+      "ipad": "iPad"
+    },
+    "start": "Avvia",
+    "stop": "Ferma",
+    "startedToast": "Pronto: connettiti dall'iPhone o sceglilo qui sotto",
+    "state": {
+      "stopped": "Non attivo",
+      "listening": "In attesa del dispositivo…",
+      "connecting": "Connessione a {peer}…",
+      "connected": "Connesso a {peer}"
+    },
+    "paired": {
+      "title": "Dispositivi associati",
+      "connect": "Connetti",
+      "connected": "Connesso"
+    },
+    "steps": {
+      "title": "La prima volta",
+      "pair": "Associa l'iPhone o l'iPad a questo computer nelle impostazioni Bluetooth.",
+      "assistive": "Sul dispositivo attiva Impostazioni → Accessibilità → Tocco → AssistiveTouch per vedere il puntatore.",
+      "start": "Avvia qui, poi connetti il dispositivo dall'elenco."
+    },
+    "pad": {
+      "title": "Trackpad",
+      "subtitle": "Fai clic per prendere il controllo: mouse e tastiera ora comandano il dispositivo.",
+      "aria": "Trackpad per il dispositivo connesso",
+      "idle": "Connetti un dispositivo per iniziare",
+      "ready": "Fai clic per prendere il controllo",
+      "captured": "Stai controllando il dispositivo",
+      "hint": "Puntatore, clic, scorrimento e tastiera vanno all'iPhone o all'iPad.",
+      "release": "Premi Esc per rilasciare il mouse",
+      "needConnection": "Connetti prima un iPhone o un iPad"
+    },
+    "text": {
+      "label": "Testo da digitare sul dispositivo",
+      "placeholder": "Scrivi il testo da inviare…",
+      "send": "Invia"
+    }
+  }
+}

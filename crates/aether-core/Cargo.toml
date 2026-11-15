@@ -1,0 +1,78 @@
+[package]
+name = "aether-core"
+description = "AetherLink engine: session orchestration, clipboard transcoding, terminal, telemetry and the C-FFI bridge"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["rlib", "staticlib"]
+
+[dependencies]
+aether-protocol.workspace = true
+aether-net.workspace = true
+aether-capture.workspace = true
+aether-codec.workspace = true
+aether-vfs.workspace = true
+aether-timetravel.workspace = true
+aether-usb.workspace = true
+aether-input.workspace = true
+aether-dom.workspace = true
+aether-display.workspace = true
+futures.workspace = true
+base64 = "0.22"
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tokio.workspace = true
+rand.workspace = true
+parking_lot.workspace = true
+blake3.workspace = true
+image = { version = "0.25", default-features = false, features = ["png", "tiff", "bmp"] }
+portable-pty = "0.9"
+dirs = "6"
+
+# sysinfo 0.37 does not build for iOS; there `crate::sysinfo` is src/mobile_sysinfo.rs.
+[target.'cfg(not(target_os = "ios"))'.dependencies]
+sysinfo = { version = "0.37", default-features = false, features = ["system", "network"] }
+
+[target.'cfg(target_os = "ios")'.dependencies]
+libc = "0.2"
+
+# No arboard backend on mobile: the app registers a platform clipboard (see src/mobile_clipboard.rs).
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+arboard = { version = "3", default-features = false, features = ["image-data"] }
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSPasteboard"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSArray", "NSData", "NSDictionary", "NSString", "NSError"] }
+objc2-vision = { version = "0.3", default-features = false, features = ["std", "VNRecognizeTextRequest", "VNRequest", "VNRequestHandler", "VNObservation", "VNTypes", "VNGeometry", "objc2-core-foundation", "objc2-image-io"] }
+
+# Windows OCR (Windows.Media.Ocr + BitmapDecoder).
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.62", features = [
+    "Foundation",
+    "Foundation_Collections",
+    "Globalization",
+    "Graphics_Imaging",
+    "Media_Ocr",
+    "Storage_Streams",
+] }
+
+# Linux OCR: pure-Rust ocrs (ONNX models fetched once into the user cache, SHA-256 pinned).
+[target.'cfg(target_os = "linux")'.dependencies]
+ocrs = { version = "0.14", default-features = false, features = ["onnx"] }
+rten = { version = "0.28", default-features = false, features = ["onnx_format"] }
+ureq = { version = "3", default-features = false, features = ["rustls"] }
+sha2 = "0.10"
+
+# Audio playback (cpal: CoreAudio / WASAPI / ALSA — Linux builds need libasound2-dev).
+[target.'cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))'.dependencies]
+cpal = "0.18"
+rtrb = "0.3"

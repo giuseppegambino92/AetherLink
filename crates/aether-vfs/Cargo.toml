@@ -1,0 +1,45 @@
+[package]
+name = "aether-vfs"
+description = "AetherLink remote virtual filesystem: sandboxed host, pipelined client, chunk cache, NFSv3 loopback mount, file transfer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+aether-protocol.workspace = true
+tokio = { workspace = true }
+thiserror.workspace = true
+tracing.workspace = true
+blake3.workspace = true
+serde.workspace = true
+parking_lot.workspace = true
+async-trait.workspace = true
+nfsserve = "0.11"
+# WebDAV loopback server (Windows mount via the built-in WebClient redirector; usable everywhere)
+dav-server = { version = "0.12", default-features = false, features = ["proppatch"] }
+hyper = { version = "1", features = ["server", "http1"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+bytes.workspace = true
+futures = { workspace = true }
+rand.workspace = true
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# FUSE mount; no features = pure-Rust mount via the setuid `fusermount3` (no libfuse, no root)
+fuser = { version = "0.18", default-features = false }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_NetworkManagement_WNet",
+    "Win32_Storage_FileSystem",
+    "Win32_System_Registry",
+    "Win32_System_Services",
+] }
+
+[dev-dependencies]
+reqwest = { version = "0.13", default-features = false }
+tempfile.workspace = true
+tokio = { workspace = true }

@@ -1,0 +1,150 @@
+name: aetherlink-mobile
+options:
+  bundleIdPrefix: dev.aetherlink.mobile
+  deploymentTarget:
+    iOS: 15.0
+fileGroups: [../../src]
+configs:
+  debug: debug
+  release: release
+settingGroups:
+  app:
+    base:
+      PRODUCT_NAME: AetherLink
+      PRODUCT_BUNDLE_IDENTIFIER: dev.aetherlink.mobile
+targetTemplates:
+  app:
+    type: application
+    sources:
+      - path: Sources
+    scheme:
+      environmentVariables:
+        RUST_BACKTRACE: full
+        RUST_LOG: info
+    settings:
+      groups: [app]
+targets:
+  aetherlink-mobile_iOS:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+      - path: Assets.xcassets
+      # Exclude built static libs: regenerating with xcodegen after a build
+      # otherwise turns the per-configuration libapp.a copies into colliding
+      # resources ("Multiple commands produce …/libapp.a"). They are linked
+      # via LIBRARY_SEARCH_PATHS, never bundled as resources.
+      - path: Externals
+        excludes: ["**/*.a"]
+      - path: aetherlink-mobile_iOS
+      - path: Shared
+      - path: assets
+        buildPhase: resources
+        type: folder
+      - path: LaunchScreen.storyboard
+    info:
+      path: aetherlink-mobile_iOS/Info.plist
+      properties:
+        LSRequiresIPhoneOS: true
+        UILaunchStoryboardName: LaunchScreen
+        UIRequiredDeviceCapabilities: [arm64, metal]
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        CFBundleShortVersionString: 0.1.0
+        CFBundleVersion: "0.1.0"
+        CFBundleDisplayName: AetherLink
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [en, it]
+        # Localized in aetherlink-mobile_iOS/{en,it}.lproj/InfoPlist.strings
+        NSCameraUsageDescription: AetherLink uses the camera to scan the QR code of a device you want to connect to.
+        NSLocalNetworkUsageDescription: AetherLink finds and connects to your devices on the local network.
+        NSBonjourServices: [_aetherlink._udp]
+        # Keeps the engine reachable while a ReplayKit broadcast is running (BackgroundKeepAlive).
+        UIBackgroundModes: [audio]
+    entitlements:
+      path: aetherlink-mobile_iOS/aetherlink-mobile_iOS.entitlements
+      properties:
+        com.apple.security.application-groups: [group.dev.aetherlink.mobile]
+    scheme:
+      environmentVariables:
+        RUST_BACKTRACE: full
+        RUST_LOG: info
+    settings:
+      base:
+        ENABLE_BITCODE: false
+        ARCHS: [arm64]
+        VALID_ARCHS: arm64 
+        LIBRARY_SEARCH_PATHS[arch=x86_64]: $(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)
+        LIBRARY_SEARCH_PATHS[arch=arm64]: $(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)
+        ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES: true
+        EXCLUDED_ARCHS[sdk=iphoneos*]: x86_64
+        SWIFT_VERSION: "5.0"
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/aetherlink-mobile/AetherBridge-Bridging-Header.h
+      groups: [app]
+    dependencies:
+      - target: AetherBroadcast
+        embed: true
+      - framework: libapp.a
+        embed: false
+      - sdk: ReplayKit.framework
+      - sdk: AVFoundation.framework
+      - sdk: CoreGraphics.framework
+      - sdk: Metal.framework
+      - sdk: MetalKit.framework
+      - sdk: QuartzCore.framework
+      - sdk: Security.framework
+      - sdk: UIKit.framework
+      - sdk: WebKit.framework
+    preBuildScripts:
+      - script: |
+          npm run -- tauri ios xcode-script -v --platform "${PLATFORM_DISPLAY_NAME:?}" --sdk-root "${SDKROOT:?}" --framework-search-paths "${FRAMEWORK_SEARCH_PATHS:?}" --header-search-paths "${HEADER_SEARCH_PATHS:?}" --gcc-preprocessor-definitions "${GCC_PREPROCESSOR_DEFINITIONS:-}" --configuration "${CONFIGURATION:?}" ${FORCE_COLOR} ${ARCHS:?}
+        name: Build Rust Code
+        basedOnDependencyAnalysis: false
+        outputFiles:
+          - $(SRCROOT)/Externals/x86_64/${CONFIGURATION}/libapp.a
+          - $(SRCROOT)/Externals/arm64/${CONFIGURATION}/libapp.a
+
+  # ReplayKit Broadcast Upload Extension ("Share this device" on iOS). Kept here — the
+  # xcodegen spec is the source of truth — so it survives `tauri ios init` regeneration.
+  AetherBroadcast:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: AetherBroadcast
+      - path: Shared
+    info:
+      path: AetherBroadcast/Info.plist
+      properties:
+        CFBundleDisplayName: AetherLink
+        CFBundleShortVersionString: 0.1.0
+        CFBundleVersion: "0.1.0"
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [en, it]
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.broadcast-services-upload
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).SampleHandler
+          RPBroadcastProcessMode: RPBroadcastProcessModeSampleBuffer
+    entitlements:
+      path: AetherBroadcast/AetherBroadcast.entitlements
+      properties:
+        com.apple.security.application-groups: [group.dev.aetherlink.mobile]
+    settings:
+      base:
+        PRODUCT_NAME: AetherBroadcast
+        PRODUCT_BUNDLE_IDENTIFIER: dev.aetherlink.mobile.broadcast
+        SWIFT_VERSION: "5.0"
+        ARCHS: [arm64]
+        APPLICATION_EXTENSION_API_ONLY: true
+        TARGETED_DEVICE_FAMILY: "1,2"
+    dependencies:
+      - sdk: ReplayKit.framework
+      - sdk: VideoToolbox.framework
+      - sdk: CoreMedia.framework

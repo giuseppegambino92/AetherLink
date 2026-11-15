@@ -1,0 +1,42 @@
+[package]
+name = "aetherlink-mobile"
+description = "AetherLink mobile application (Tauri 2 shell for Android and iOS)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "aetherlink_mobile_lib"
+# staticlib: iOS (linked by Xcode) · cdylib: Android (.so loaded by the activity) · rlib: desktop checks/tests
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "aetherlink-mobile"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2.7", features = [] }
+
+[dependencies]
+aether-protocol.workspace = true
+aether-core.workspace = true
+aether-capture.workspace = true
+aether-input.workspace = true
+tauri = { version = "2.12", features = [] }
+tauri-plugin-clipboard-manager = "2.5"
+serde.workspace = true
+serde_json.workspace = true
+parking_lot.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+# Android only: the 2.4.x iOS entry point (`init_plugin_barcode_scanner`) is not `public`
+# and does not link with Xcode 27's Swift; iOS uses the app's native scanner (QrScanner.swift).
+[target.'cfg(target_os = "android")'.dependencies]
+tauri-plugin-barcode-scanner = "2"
+jni = "0.21"
+
+[target.'cfg(target_os = "ios")'.dependencies]
+tokio = { workspace = true, features = ["sync"] }

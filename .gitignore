@@ -1,0 +1,7 @@
+/target
+**/target
+node_modules/
+.DS_Store
+*.dSYM
+apps/desktop/src-tauri/gen/
+.ci-logs/

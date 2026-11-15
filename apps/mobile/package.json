@@ -1,0 +1,16 @@
+{
+  "name": "aetherlink-mobile-ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "AetherLink mobile UI (static frontend served by Tauri on Android/iOS).",
+  "scripts": {
+    "sync": "node scripts/sync-shared.mjs",
+    "check:i18n": "node ../desktop/scripts/check-i18n.mjs --all",
+    "check": "node scripts/sync-shared.mjs --check && node ../desktop/scripts/check-i18n.mjs --all && node ../desktop/scripts/check-syntax.mjs --root . && node ../desktop/scripts/check-syntax.mjs --root ../desktop",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.12.4"
+  }
+}

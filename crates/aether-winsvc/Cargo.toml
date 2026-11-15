@@ -1,0 +1,26 @@
+[package]
+name = "aether-winsvc"
+description = "AetherLink Windows service: LocalSystem supervisor that launches the AetherLink agent into each interactive session (lock screen / UAC control)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "aether-winsvc"
+path = "src/main.rs"
+
+[dependencies]
+
+[target.'cfg(windows)'.dependencies]
+windows-service = "0.8.1"
+tracing.workspace = true
+tracing-subscriber.workspace = true
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_System_Environment",
+    "Win32_System_JobObjects",
+    "Win32_System_RemoteDesktop",
+    "Win32_System_Registry",
+    "Win32_System_Threading",
+] }

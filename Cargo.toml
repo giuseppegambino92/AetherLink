@@ -1,0 +1,66 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/aether-protocol",
+    "crates/aether-net",
+    "crates/aether-capture",
+    "crates/aether-codec",
+    "crates/aether-input",
+    "crates/aether-vfs",
+    "crates/aether-usb",
+    "crates/aether-dom",
+    "crates/aether-timetravel",
+    "crates/aether-core",
+    "crates/aether-winsvc",
+    "crates/aether-display",
+    "relay-server",
+    "apps/desktop/src-tauri",
+    "apps/mobile/src-tauri",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/aetherlink/aetherlink"
+rust-version = "1.88"
+
+[workspace.dependencies]
+# internal
+aether-protocol = { path = "crates/aether-protocol" }
+aether-net = { path = "crates/aether-net" }
+aether-capture = { path = "crates/aether-capture" }
+aether-codec = { path = "crates/aether-codec" }
+aether-input = { path = "crates/aether-input" }
+aether-vfs = { path = "crates/aether-vfs" }
+aether-usb = { path = "crates/aether-usb" }
+aether-dom = { path = "crates/aether-dom" }
+aether-timetravel = { path = "crates/aether-timetravel" }
+aether-core = { path = "crates/aether-core" }
+aether-display = { path = "crates/aether-display" }
+
+# shared third-party
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+bincode = "1.3"
+thiserror = "2"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+tokio = { version = "1", features = ["full"] }
+bytes = "1"
+async-trait = "0.1"
+futures = "0.3"
+rand = "0.8"
+blake3 = "1"
+zstd = "0.13"
+parking_lot = "0.12"
+tempfile = "3"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "debuginfo"
+
+[profile.dev.package."*"]
+opt-level = 2

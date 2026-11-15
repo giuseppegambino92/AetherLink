@@ -1,0 +1,166 @@
+// Minimal damped-spring solver (mass–spring–damper, semi-implicit Euler with
+// fixed sub-steps). Drives every expressive motion in the UI: card lift,
+// sheet/palette entrance, HUD pill reveal, handshake ring.
+//
+//   F = -k (x - target) - c v ;  a = F / m
+
+export const reducedMotion = () =>
+  typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+export const SPRINGS = {
+  gentle: { stiffness: 170, damping: 26, mass: 1 },
+  snappy: { stiffness: 380, damping: 32, mass: 1 },
+  bouncy: { stiffness: 260, damping: 17, mass: 1 },
+  pill: { stiffness: 520, damping: 34, mass: 1 },
+  lift: { stiffness: 300, damping: 22, mass: 1 },
+  slow: { stiffness: 90, damping: 20, mass: 1.2 },
+};
+
+const STEP = 1 / 240; // seconds per integration sub-step
+
+export class Spring {
+  /**
+   * @param {{stiffness?:number, damping?:number, mass?:number, value?:number, precision?:number,
+   *          onUpdate?:(v:number, vel:number)=>void, onRest?:(v:number)=>void}} opts
+   */
+  constructor(opts = {}) {
+    const p = { ...SPRINGS.gentle, ...opts };
+    this.k = p.stiffness;
+    this.c = p.damping;
+    this.m = p.mass;
+    this.value = opts.value ?? 0;
+    this.target = this.value;
+    this.velocity = 0;
+    this.precision = opts.precision ?? 0.0005;
+    this.onUpdate = opts.onUpdate || (() => {});
+    this.onRest = opts.onRest || (() => {});
+    this._raf = 0;
+    this._last = 0;
+    this._acc = 0;
+    this._tick = this._tick.bind(this);
+  }
+
+  configure(preset) {
+    this.k = preset.stiffness ?? this.k;
+    this.c = preset.damping ?? this.c;
+    this.m = preset.mass ?? this.m;
+    return this;
+  }
+
+  /** Animate towards `target`, optionally with an initial velocity impulse. */
+  to(target, velocity) {
+    this.target = target;
+    if (velocity !== undefined) this.velocity = velocity;
+    if (reducedMotion()) {
+      this.jump(target);
+      return this;
+    }
+    if (!this._raf) {
+      this._last = performance.now();
+      this._acc = 0;
+      this._raf = requestAnimationFrame(this._tick);
+    }
+    return this;
+  }
+
+  /** Snap without animation. */
+  jump(value) {
+    this.stop();
+    this.value = value;
+    this.target = value;
+    this.velocity = 0;
+    this.onUpdate(value, 0);
+    this.onRest(value);
+    return this;
+  }
+
+  stop() {
+    if (this._raf) cancelAnimationFrame(this._raf);
+    this._raf = 0;
+  }
+
+  get isAnimating() {
+    return this._raf !== 0;
+  }
+
+  _tick(now) {
+    // Clamp long frames (tab switches) so the integrator stays stable.
+    const dt = Math.min(0.064, (now - this._last) / 1000);
+    this._last = now;
+    this._acc += dt;
+    while (this._acc >= STEP) {
+      const force = -this.k * (this.value - this.target) - this.c * this.velocity;
+      this.velocity += (force / this.m) * STEP;
+      this.value += this.velocity * STEP;
+      this._acc -= STEP;
+    }
+    const resting = Math.abs(this.velocity) < this.precision * 10 && Math.abs(this.value - this.target) < this.precision;
+    if (resting) {
+      this.value = this.target;
+      this.velocity = 0;
+      this._raf = 0;
+      this.onUpdate(this.value, 0);
+      this.onRest(this.value);
+      return;
+    }
+    this.onUpdate(this.value, this.velocity);
+    this._raf = requestAnimationFrame(this._tick);
+  }
+}
+
+/** Promise-based one-shot helper. */
+export function springTo({ from = 0, to = 1, velocity = 0, preset = SPRINGS.gentle, onUpdate }) {
+  return new Promise((resolve) => {
+    const s = new Spring({ ...preset, value: from, onUpdate, onRest: resolve });
+    s.velocity = velocity;
+    s.to(to);
+  });
+}
+
+/**
+ * Card hover lift: drives the `--lift` custom property (0..1), a small
+ * translate/scale and the pointer-following light (`--mx/--my`).
+ */
+export function springHover(el, { lift = 4, scale = 0.006 } = {}) {
+  const s = new Spring({
+    ...SPRINGS.lift,
+    onUpdate: (v) => {
+      el.style.setProperty('--lift', v.toFixed(4));
+      el.style.transform = `translate3d(0, ${(-lift * v).toFixed(3)}px, 0) scale(${(1 + scale * v).toFixed(5)})`;
+    },
+  });
+  el.addEventListener('pointerenter', () => s.to(1));
+  el.addEventListener('pointerleave', () => s.to(0));
+  el.addEventListener('pointermove', (e) => {
+    const r = el.getBoundingClientRect();
+    el.style.setProperty('--mx', `${e.clientX - r.left}px`);
+    el.style.setProperty('--my', `${e.clientY - r.top}px`);
+  });
+  el.addEventListener('pointerdown', () => s.to(0.4, -2));
+  el.addEventListener('pointerup', () => s.to(1));
+  return s;
+}
+
+/**
+ * Entrance/exit for overlays (sheet, palette, drawers): drives opacity and a
+ * translate/scale; resolves once at rest. `axis` 'y' | 'x' | 'top'.
+ */
+export function springPresence(el, { show, axis = 'y', distance = 18, preset = SPRINGS.snappy, scrim } = {}) {
+  const from = show ? 0 : 1;
+  const to = show ? 1 : 0;
+  return springTo({
+    from,
+    to,
+    preset,
+    onUpdate: (v) => {
+      const inv = 1 - v;
+      let tr;
+      if (axis === 'x') tr = `translate3d(${(distance * inv).toFixed(2)}px,0,0)`;
+      else if (axis === 'top') tr = `translate3d(0, ${(-100 * inv).toFixed(3)}%, 0)`;
+      else tr = `translate3d(0, ${(distance * inv).toFixed(2)}px, 0) scale(${(0.965 + 0.035 * v).toFixed(4)})`;
+      el.style.transform = el.dataset.baseTransform ? `${el.dataset.baseTransform} ${tr}` : tr;
+      el.style.opacity = Math.max(0, Math.min(1, v)).toFixed(3);
+      if (scrim) scrim.style.opacity = Math.max(0, Math.min(1, v)).toFixed(3);
+    },
+  });
+}

@@ -1,0 +1,35 @@
+[package]
+name = "aetherlink-desktop"
+description = "AetherLink desktop application (Tauri 2 shell)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+default-run = "aetherlink-desktop"
+
+[lib]
+name = "aetherlink_desktop_lib"
+crate-type = ["rlib"]
+
+[[bin]]
+name = "aetherlink-desktop"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2.7", features = [] }
+
+[dependencies]
+aether-protocol.workspace = true
+aether-core.workspace = true
+aether-display.workspace = true
+tokio.workspace = true
+tauri = { version = "2.12", features = ["tray-icon", "image-png", "macos-private-api"] }
+tauri-plugin-global-shortcut = "2.4"
+tauri-plugin-window-state = "2.5"
+tauri-plugin-clipboard-manager = "2.5"
+serde.workspace = true
+serde_json.workspace = true
+parking_lot.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

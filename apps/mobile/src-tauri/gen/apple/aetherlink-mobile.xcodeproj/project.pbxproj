@@ -1,0 +1,725 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0761865378E49783313579E2 /* ReplayKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 025D966FD89D7AF311BC5777 /* ReplayKit.framework */; };
+		083069BAB1EE0650F70BA506 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C1888321B1CAC3F5351C0C7C /* Assets.xcassets */; };
+		11F265DD95F24E70FAD2EACC /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A4D56713D881421D3D77764E /* WebKit.framework */; };
+		1EF20E48AA44212CF5361C29 /* AetherBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05738CEE413290A4C945ED35 /* AetherBridge.swift */; };
+		2615E528DD1C9B18B66DACAB /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52B46680FA691F2EE7F03A2C /* AVFoundation.framework */; };
+		26568C912CFD381A36E63120 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = AC61C745BE17D00F5421A0E6 /* Localizable.strings */; };
+		2707E4D93965FA1C7019F704 /* VideoToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EAB4C8241970C9719C4B3C8E /* VideoToolbox.framework */; };
+		28DCC60B7D0286C035E94046 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F41847C1441295177BBA0B7B /* QuartzCore.framework */; };
+		483FC737FFD5CEFA56F49D34 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 65C4DB397892B70697C684FE /* InfoPlist.strings */; };
+		4C987DBB3BA62F6249331EF9 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9DC409ECABDF3B328D116BDE /* Metal.framework */; };
+		5349C8ACEF449CD2F81E350D /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C2CF628ABFF04959E8836280 /* CoreMedia.framework */; };
+		587477AFDEF8EB001DAD38CB /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 882A098A1A2D962991CE4E9C /* main.mm */; };
+		73506CFE898B94603856A8F6 /* libapp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A31843314070AF2ED583A2A /* libapp.a */; };
+		73B7FA7C8DF57E5708F84FF9 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 42F58AB59CFCB6D22B4C1C4D /* CoreGraphics.framework */; };
+		78C123444BBC3268C4FD9B45 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 504321ABE6B524FDDD335A0B /* UIKit.framework */; };
+		7A53AF89C6E768BC216DF265 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2CFD0FC4F788A4F8A990F45 /* Security.framework */; };
+		C47E2EF26AECC1B175B15D1E /* BroadcastProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36D07F01C082A2D908EEDE73 /* BroadcastProtocol.swift */; };
+		D6E6C2C9535F1444CAA9604D /* BroadcastProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36D07F01C082A2D908EEDE73 /* BroadcastProtocol.swift */; };
+		D74F2EBCB0EFF55F90344FD9 /* ReplayKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 025D966FD89D7AF311BC5777 /* ReplayKit.framework */; };
+		D7EB910D57EE3EAFCD6114AC /* AetherBroadcast.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 464BCFAE252490B6F8EC0C31 /* AetherBroadcast.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		D8C6E4813344325F77BA1396 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 76ECA1E0FC895E5225A743D5 /* Localizable.strings */; };
+		E1186919CDB6292423FC2DA3 /* QrScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1D55F8891CD5CF463A0DF8 /* QrScanner.swift */; };
+		E6DBF818D21C7FED81F6A2A7 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 383444917D3108450412019B /* LaunchScreen.storyboard */; };
+		E7B75AE535756168AE6C2796 /* SampleHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10680DC545B660EC89EAA260 /* SampleHandler.swift */; };
+		F20486DB6865543F5961B55F /* assets in Resources */ = {isa = PBXBuildFile; fileRef = C92F2D1AEB3D7FD8D6377352 /* assets */; };
+		F6E70526161E74EE41F54E16 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96323177600C87FC21BDDE28 /* MetalKit.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		F57E0DFAAD62692C738F1A56 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0A9D18E16D449E793205779A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D588F428D0121FD2D77C45FB;
+			remoteInfo = AetherBroadcast;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		87EC51E9ADE156A3C1D439CB /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				D7EB910D57EE3EAFCD6114AC /* AetherBroadcast.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		025D966FD89D7AF311BC5777 /* ReplayKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ReplayKit.framework; path = System/Library/Frameworks/ReplayKit.framework; sourceTree = SDKROOT; };
+		05738CEE413290A4C945ED35 /* AetherBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AetherBridge.swift; sourceTree = "<group>"; };
+		0A42D0753900B15BB3AE2C51 /* ios.rs */ = {isa = PBXFileReference; path = ios.rs; sourceTree = "<group>"; };
+		10680DC545B660EC89EAA260 /* SampleHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleHandler.swift; sourceTree = "<group>"; };
+		19EED8AA3C052A8575AE998D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		1CE69BA6383705763DA52E1D /* aetherlink-mobile_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "aetherlink-mobile_iOS.entitlements"; sourceTree = "<group>"; };
+		2BA0F3731E00B810C6AB1D2D /* android.rs */ = {isa = PBXFileReference; path = android.rs; sourceTree = "<group>"; };
+		3049E58481F5169E7961BED6 /* mobile.rs */ = {isa = PBXFileReference; path = mobile.rs; sourceTree = "<group>"; };
+		340CDA6A123E5E4EC25F8D0A /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		36D07F01C082A2D908EEDE73 /* BroadcastProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BroadcastProtocol.swift; sourceTree = "<group>"; };
+		36F61FBFE9B424230677944F /* aetherlink-mobile_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "aetherlink-mobile_iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		383444917D3108450412019B /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		3BE558DD6B51C8E74D47D682 /* logging.rs */ = {isa = PBXFileReference; path = logging.rs; sourceTree = "<group>"; };
+		42F58AB59CFCB6D22B4C1C4D /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		464BCFAE252490B6F8EC0C31 /* AetherBroadcast.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = AetherBroadcast.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		4C1D55F8891CD5CF463A0DF8 /* QrScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QrScanner.swift; sourceTree = "<group>"; };
+		504321ABE6B524FDDD335A0B /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		52B46680FA691F2EE7F03A2C /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		620CAFD6E9F0CE73854F5BC8 /* main.rs */ = {isa = PBXFileReference; path = main.rs; sourceTree = "<group>"; };
+		6D3F3A0ECB92819B5E2B0212 /* AetherBridge-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "AetherBridge-Bridging-Header.h"; sourceTree = "<group>"; };
+		6EE9C8E92B471891DEFB5C6F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		70E066E8C003FAA6776E2B12 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		7BC6E2A59A5D93B274DE45E4 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		7CB43E1F5911DF3242F590D1 /* lib.rs */ = {isa = PBXFileReference; path = lib.rs; sourceTree = "<group>"; };
+		81D88D336AAB1D782C9D5FB3 /* bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
+		882A098A1A2D962991CE4E9C /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
+		96323177600C87FC21BDDE28 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		9A31843314070AF2ED583A2A /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
+		9DC409ECABDF3B328D116BDE /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		A4D56713D881421D3D77764E /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
+		B2CFD0FC4F788A4F8A990F45 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		BF7751C0C8E5E912A6DD520B /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = it.lproj/Localizable.strings; sourceTree = "<group>"; };
+		C1888321B1CAC3F5351C0C7C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C2CF628ABFF04959E8836280 /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
+		C92F2D1AEB3D7FD8D6377352 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = SOURCE_ROOT; };
+		D26673FE15BD9ADBBAF21235 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = it.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		EAB4C8241970C9719C4B3C8E /* VideoToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = VideoToolbox.framework; path = System/Library/Frameworks/VideoToolbox.framework; sourceTree = SDKROOT; };
+		EFC7EAF06A6C4FBE45785A11 /* shell.rs */ = {isa = PBXFileReference; path = shell.rs; sourceTree = "<group>"; };
+		F41847C1441295177BBA0B7B /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		F8782179752444AB151784FC /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = it.lproj/Localizable.strings; sourceTree = "<group>"; };
+		FFFE781752991100861E4ED2 /* AetherBroadcast.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AetherBroadcast.entitlements; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		04E914B13F8A6F90FF768CC1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				73506CFE898B94603856A8F6 /* libapp.a in Frameworks */,
+				0761865378E49783313579E2 /* ReplayKit.framework in Frameworks */,
+				2615E528DD1C9B18B66DACAB /* AVFoundation.framework in Frameworks */,
+				73B7FA7C8DF57E5708F84FF9 /* CoreGraphics.framework in Frameworks */,
+				4C987DBB3BA62F6249331EF9 /* Metal.framework in Frameworks */,
+				F6E70526161E74EE41F54E16 /* MetalKit.framework in Frameworks */,
+				28DCC60B7D0286C035E94046 /* QuartzCore.framework in Frameworks */,
+				7A53AF89C6E768BC216DF265 /* Security.framework in Frameworks */,
+				78C123444BBC3268C4FD9B45 /* UIKit.framework in Frameworks */,
+				11F265DD95F24E70FAD2EACC /* WebKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4A990FA0AB27058E35971E8D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D74F2EBCB0EFF55F90344FD9 /* ReplayKit.framework in Frameworks */,
+				2707E4D93965FA1C7019F704 /* VideoToolbox.framework in Frameworks */,
+				5349C8ACEF449CD2F81E350D /* CoreMedia.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0B32E8ABBD99F4B5BC36B73F /* AetherBroadcast */ = {
+			isa = PBXGroup;
+			children = (
+				FFFE781752991100861E4ED2 /* AetherBroadcast.entitlements */,
+				19EED8AA3C052A8575AE998D /* Info.plist */,
+				10680DC545B660EC89EAA260 /* SampleHandler.swift */,
+				76ECA1E0FC895E5225A743D5 /* Localizable.strings */,
+			);
+			path = AetherBroadcast;
+			sourceTree = "<group>";
+		};
+		30FA7BEE7DF553D8B7E00939 /* aetherlink-mobile_iOS */ = {
+			isa = PBXGroup;
+			children = (
+				1CE69BA6383705763DA52E1D /* aetherlink-mobile_iOS.entitlements */,
+				70E066E8C003FAA6776E2B12 /* Info.plist */,
+				65C4DB397892B70697C684FE /* InfoPlist.strings */,
+				AC61C745BE17D00F5421A0E6 /* Localizable.strings */,
+			);
+			path = "aetherlink-mobile_iOS";
+			sourceTree = "<group>";
+		};
+		527FFF7FA2A3A812FBD75BED /* src */ = {
+			isa = PBXGroup;
+			children = (
+				2BA0F3731E00B810C6AB1D2D /* android.rs */,
+				0A42D0753900B15BB3AE2C51 /* ios.rs */,
+				7CB43E1F5911DF3242F590D1 /* lib.rs */,
+				3BE558DD6B51C8E74D47D682 /* logging.rs */,
+				620CAFD6E9F0CE73854F5BC8 /* main.rs */,
+				3049E58481F5169E7961BED6 /* mobile.rs */,
+				EFC7EAF06A6C4FBE45785A11 /* shell.rs */,
+			);
+			name = src;
+			path = ../../src;
+			sourceTree = "<group>";
+		};
+		6B1399296D72C8AA77A0ACBA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				52B46680FA691F2EE7F03A2C /* AVFoundation.framework */,
+				42F58AB59CFCB6D22B4C1C4D /* CoreGraphics.framework */,
+				C2CF628ABFF04959E8836280 /* CoreMedia.framework */,
+				9A31843314070AF2ED583A2A /* libapp.a */,
+				9DC409ECABDF3B328D116BDE /* Metal.framework */,
+				96323177600C87FC21BDDE28 /* MetalKit.framework */,
+				F41847C1441295177BBA0B7B /* QuartzCore.framework */,
+				025D966FD89D7AF311BC5777 /* ReplayKit.framework */,
+				B2CFD0FC4F788A4F8A990F45 /* Security.framework */,
+				504321ABE6B524FDDD335A0B /* UIKit.framework */,
+				EAB4C8241970C9719C4B3C8E /* VideoToolbox.framework */,
+				A4D56713D881421D3D77764E /* WebKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		76FF0831DCF91D04B92CD144 /* aetherlink-mobile */ = {
+			isa = PBXGroup;
+			children = (
+				6D3F3A0ECB92819B5E2B0212 /* AetherBridge-Bridging-Header.h */,
+				05738CEE413290A4C945ED35 /* AetherBridge.swift */,
+				882A098A1A2D962991CE4E9C /* main.mm */,
+				4C1D55F8891CD5CF463A0DF8 /* QrScanner.swift */,
+				D2AB8D69B5F27B8CE9382F15 /* bindings */,
+			);
+			path = "aetherlink-mobile";
+			sourceTree = "<group>";
+		};
+		8E9EBB92292B970CDD4BD0F7 = {
+			isa = PBXGroup;
+			children = (
+				C92F2D1AEB3D7FD8D6377352 /* assets */,
+				C1888321B1CAC3F5351C0C7C /* Assets.xcassets */,
+				383444917D3108450412019B /* LaunchScreen.storyboard */,
+				0B32E8ABBD99F4B5BC36B73F /* AetherBroadcast */,
+				30FA7BEE7DF553D8B7E00939 /* aetherlink-mobile_iOS */,
+				A88CD39DB9DEE2B5519E9742 /* Externals */,
+				90057B1D3D3908FD63478342 /* Shared */,
+				CFB272A592B756F0EACE4139 /* Sources */,
+				527FFF7FA2A3A812FBD75BED /* src */,
+				6B1399296D72C8AA77A0ACBA /* Frameworks */,
+				AF945B86865A00D1BD5670A1 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		90057B1D3D3908FD63478342 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				36D07F01C082A2D908EEDE73 /* BroadcastProtocol.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		A88CD39DB9DEE2B5519E9742 /* Externals */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Externals;
+			sourceTree = "<group>";
+		};
+		AF945B86865A00D1BD5670A1 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				464BCFAE252490B6F8EC0C31 /* AetherBroadcast.appex */,
+				36F61FBFE9B424230677944F /* aetherlink-mobile_iOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		CFB272A592B756F0EACE4139 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				76FF0831DCF91D04B92CD144 /* aetherlink-mobile */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		D2AB8D69B5F27B8CE9382F15 /* bindings */ = {
+			isa = PBXGroup;
+			children = (
+				81D88D336AAB1D782C9D5FB3 /* bindings.h */,
+			);
+			path = bindings;
+			sourceTree = "<group>";
+		};
+		"TEMP_0D1B06E8-32EF-4063-B5FF-659B9A88C380" /* arm64 */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = arm64;
+			sourceTree = "<group>";
+		};
+		"TEMP_50829841-D672-4AB1-B280-A804EC4AA96B" /* x86_64 */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = x86_64;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B981912F6A47D7097A01E38D /* aetherlink-mobile_iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 092D8C22EFE1D3AFCF1D6971 /* Build configuration list for PBXNativeTarget "aetherlink-mobile_iOS" */;
+			buildPhases = (
+				2159B0B7F387C44AB52F8536 /* Build Rust Code */,
+				C6A34420F7625854EF73C3EE /* Sources */,
+				BE111C340679BA3CC561878C /* Resources */,
+				04E914B13F8A6F90FF768CC1 /* Frameworks */,
+				87EC51E9ADE156A3C1D439CB /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A79E4B6D46986732A17EC2A7 /* PBXTargetDependency */,
+			);
+			name = "aetherlink-mobile_iOS";
+			packageProductDependencies = (
+			);
+			productName = "aetherlink-mobile_iOS";
+			productReference = 36F61FBFE9B424230677944F /* aetherlink-mobile_iOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D588F428D0121FD2D77C45FB /* AetherBroadcast */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B3EE8E1ED7AB36E8E087F0F1 /* Build configuration list for PBXNativeTarget "AetherBroadcast" */;
+			buildPhases = (
+				0428872B8069EE28DFEFB86F /* Sources */,
+				448368AFC88E9139EC108B9F /* Resources */,
+				4A990FA0AB27058E35971E8D /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = AetherBroadcast;
+			packageProductDependencies = (
+			);
+			productName = AetherBroadcast;
+			productReference = 464BCFAE252490B6F8EC0C31 /* AetherBroadcast.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0A9D18E16D449E793205779A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 6260782CEF03723E9741D542 /* Build configuration list for PBXProject "aetherlink-mobile" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+				it,
+			);
+			mainGroup = 8E9EBB92292B970CDD4BD0F7;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = AF945B86865A00D1BD5670A1 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B981912F6A47D7097A01E38D /* aetherlink-mobile_iOS */,
+				D588F428D0121FD2D77C45FB /* AetherBroadcast */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		448368AFC88E9139EC108B9F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D8C6E4813344325F77BA1396 /* Localizable.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BE111C340679BA3CC561878C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				083069BAB1EE0650F70BA506 /* Assets.xcassets in Resources */,
+				483FC737FFD5CEFA56F49D34 /* InfoPlist.strings in Resources */,
+				E6DBF818D21C7FED81F6A2A7 /* LaunchScreen.storyboard in Resources */,
+				26568C912CFD381A36E63120 /* Localizable.strings in Resources */,
+				F20486DB6865543F5961B55F /* assets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		2159B0B7F387C44AB52F8536 /* Build Rust Code */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build Rust Code";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Externals/x86_64/${CONFIGURATION}/libapp.a",
+				"$(SRCROOT)/Externals/arm64/${CONFIGURATION}/libapp.a",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "npm run -- tauri ios xcode-script -v --platform \"${PLATFORM_DISPLAY_NAME:?}\" --sdk-root \"${SDKROOT:?}\" --framework-search-paths \"${FRAMEWORK_SEARCH_PATHS:?}\" --header-search-paths \"${HEADER_SEARCH_PATHS:?}\" --gcc-preprocessor-definitions \"${GCC_PREPROCESSOR_DEFINITIONS:-}\" --configuration \"${CONFIGURATION:?}\" ${FORCE_COLOR} ${ARCHS:?}\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0428872B8069EE28DFEFB86F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C47E2EF26AECC1B175B15D1E /* BroadcastProtocol.swift in Sources */,
+				E7B75AE535756168AE6C2796 /* SampleHandler.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C6A34420F7625854EF73C3EE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1EF20E48AA44212CF5361C29 /* AetherBridge.swift in Sources */,
+				D6E6C2C9535F1444CAA9604D /* BroadcastProtocol.swift in Sources */,
+				E1186919CDB6292423FC2DA3 /* QrScanner.swift in Sources */,
+				587477AFDEF8EB001DAD38CB /* main.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A79E4B6D46986732A17EC2A7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D588F428D0121FD2D77C45FB /* AetherBroadcast */;
+			targetProxy = F57E0DFAAD62692C738F1A56 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		65C4DB397892B70697C684FE /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				340CDA6A123E5E4EC25F8D0A /* en */,
+				D26673FE15BD9ADBBAF21235 /* it */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		76ECA1E0FC895E5225A743D5 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				6EE9C8E92B471891DEFB5C6F /* en */,
+				F8782179752444AB151784FC /* it */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+		AC61C745BE17D00F5421A0E6 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				7BC6E2A59A5D93B274DE45E4 /* en */,
+				BF7751C0C8E5E912A6DD520B /* it */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		3B8F355E04EDCFDB6740CDDD /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ARCHS = (
+					arm64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "aetherlink-mobile_iOS/aetherlink-mobile_iOS.entitlements";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_BITCODE = NO;
+				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = "aetherlink-mobile_iOS/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = dev.aetherlink.mobile;
+				PRODUCT_NAME = "AetherLink";
+				SDKROOT = iphoneos;
+				SWIFT_OBJC_BRIDGING_HEADER = "Sources/aetherlink-mobile/AetherBridge-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = arm64;
+			};
+			name = release;
+		};
+		5C3ADA151CDAC38AA36E7572 /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ARCHS = (
+					arm64,
+				);
+				CODE_SIGN_ENTITLEMENTS = AetherBroadcast/AetherBroadcast.entitlements;
+				INFOPLIST_FILE = AetherBroadcast/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.aetherlink.mobile.broadcast;
+				PRODUCT_NAME = AetherBroadcast;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = release;
+		};
+		7D2871E5F948FEDC73E54385 /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ARCHS = (
+					arm64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "aetherlink-mobile_iOS/aetherlink-mobile_iOS.entitlements";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_BITCODE = NO;
+				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = "aetherlink-mobile_iOS/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = dev.aetherlink.mobile;
+				PRODUCT_NAME = "AetherLink";
+				SDKROOT = iphoneos;
+				SWIFT_OBJC_BRIDGING_HEADER = "Sources/aetherlink-mobile/AetherBridge-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = arm64;
+			};
+			name = debug;
+		};
+		931446702061798F91876BC9 /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = debug;
+		};
+		E5A6522570BE241763B894D1 /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = release;
+		};
+		ECA52A352D3D8970CB4C084E /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ARCHS = (
+					arm64,
+				);
+				CODE_SIGN_ENTITLEMENTS = AetherBroadcast/AetherBroadcast.entitlements;
+				INFOPLIST_FILE = AetherBroadcast/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.aetherlink.mobile.broadcast;
+				PRODUCT_NAME = AetherBroadcast;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		092D8C22EFE1D3AFCF1D6971 /* Build configuration list for PBXNativeTarget "aetherlink-mobile_iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7D2871E5F948FEDC73E54385 /* debug */,
+				3B8F355E04EDCFDB6740CDDD /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+		6260782CEF03723E9741D542 /* Build configuration list for PBXProject "aetherlink-mobile" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				931446702061798F91876BC9 /* debug */,
+				E5A6522570BE241763B894D1 /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+		B3EE8E1ED7AB36E8E087F0F1 /* Build configuration list for PBXNativeTarget "AetherBroadcast" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				ECA52A352D3D8970CB4C084E /* debug */,
+				5C3ADA151CDAC38AA36E7572 /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0A9D18E16D449E793205779A /* Project object */;
+}

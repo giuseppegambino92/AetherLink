@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1A2233"/>
+      <stop offset="0.55" stop-color="#0E121B"/>
+      <stop offset="1" stop-color="#080A10"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.46" r="0.5">
+      <stop offset="0" stop-color="#7FB6FF" stop-opacity="0.34"/>
+      <stop offset="0.55" stop-color="#6A5CFF" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ringA" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#E9F4FF"/>
+      <stop offset="0.35" stop-color="#7CC8FF"/>
+      <stop offset="0.75" stop-color="#7A6BFF"/>
+      <stop offset="1" stop-color="#3B2F9E"/>
+    </linearGradient>
+    <linearGradient id="ringB" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F6FBFF"/>
+      <stop offset="0.4" stop-color="#9BE7E0"/>
+      <stop offset="0.8" stop-color="#4E8BFF"/>
+      <stop offset="1" stop-color="#22306E"/>
+    </linearGradient>
+    <linearGradient id="spec" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="22"/>
+    </filter>
+    <clipPath id="cross"><circle cx="190" cy="0" r="46"/><circle cx="-190" cy="0" r="46"/></clipPath>
+    <clipPath id="tile"><rect x="100" y="100" width="824" height="824" rx="186"/></clipPath>
+  </defs>
+  <g clip-path="url(#tile)">
+    <rect x="100" y="100" width="824" height="824" fill="url(#bg)"/>
+    <circle cx="512" cy="490" r="420" fill="url(#glow)"/>
+    <g transform="translate(512 512)" fill="none" stroke-linecap="round">
+      <g filter="url(#soft)" opacity="0.75">
+        <ellipse rx="250" ry="132" transform="rotate(-32)" stroke="#6FA8FF" stroke-width="40"/>
+        <ellipse rx="250" ry="132" transform="rotate(32)" stroke="#7DE0D6" stroke-width="40"/>
+      </g>
+      <ellipse rx="250" ry="132" transform="rotate(-32)" stroke="url(#ringA)" stroke-width="30"/>
+      <ellipse rx="250" ry="132" transform="rotate(32)" stroke="url(#ringB)" stroke-width="30"/>
+      <g clip-path="url(#cross)">
+        <ellipse rx="250" ry="132" transform="rotate(32)" stroke="#0E121B" stroke-width="50"/>
+        <ellipse rx="250" ry="132" transform="rotate(32)" stroke="url(#ringB)" stroke-width="30"/>
+      </g>
+      <circle cx="212" cy="-132" r="44" fill="#BFE0FF" opacity="0.16"/>
+      <circle cx="212" cy="-132" r="17" fill="#F4F8FF"/>
+    </g>
+    <rect x="100" y="100" width="824" height="412" fill="url(#spec)"/>
+  </g>
+  <rect x="100.5" y="100.5" width="823" height="823" rx="186" fill="none" stroke="#FFFFFF" stroke-opacity="0.10" stroke-width="2"/>
+</svg>

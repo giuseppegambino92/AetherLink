@@ -1,0 +1,545 @@
+{
+  "app": {
+    "name": "AetherLink",
+    "tagline": "Peer-to-peer remote desktop"
+  },
+  "language": {
+    "en": "English",
+    "it": "Italiano"
+  },
+  "preview": {
+    "ribbon": "Dev preview — sample data, not connected to the engine"
+  },
+  "nav": {
+    "aria": "Main navigation",
+    "home": "Home",
+    "devices": "Devices",
+    "drives": "Virtual Drives",
+    "settings": "Settings",
+    "iphone": "Control iPhone"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "close": "Close",
+    "connect": "Connect",
+    "copied": "Copied to clipboard",
+    "copy": "Copy",
+    "done": "Done",
+    "retry": "Try again",
+    "seeAll": "See all"
+  },
+  "keys": {
+    "ctrl": "Ctrl",
+    "alt": "Alt",
+    "shift": "Shift",
+    "super": "Win",
+    "space": "Space",
+    "esc": "esc"
+  },
+  "engine": {
+    "notWiredTitle": "Engine not connected",
+    "notWiredBody": "The AetherLink engine isn’t running in this build yet. This panel comes alive as soon as it is.",
+    "chipNotWired": "Engine offline",
+    "chipError": "Engine error",
+    "chipStarting": "Starting…",
+    "chipReady": "Ready for connections",
+    "chipPaused": "Not accepting connections"
+  },
+  "errors": {
+    "engineNotWired": "The AetherLink engine isn’t connected yet.",
+    "invalidDecision": "That response isn’t valid for this request.",
+    "unsupportedLocale": "That language isn’t available.",
+    "notFound": "We couldn’t find that device or item.",
+    "unauthorized": "Wrong password, or the other side declined the request.",
+    "timeout": "The other device didn’t answer in time.",
+    "unsupported": "This isn’t supported on that device.",
+    "permissionDenied": "macOS blocked this. Check permissions in Settings.",
+    "offline": "The device is offline.",
+    "generic": "Something went wrong: {detail}",
+    "tryAgain": "Please try again in a moment.",
+    "copyFailed": "Couldn’t copy to the clipboard.",
+    "bootFailed": "AetherLink couldn’t start its interface",
+    "capturePermission": "The remote computer hasn't allowed screen recording yet. Ask its owner to enable AetherLink in System Settings → Privacy & Security → Screen Recording.",
+    "captureUnavailable": "The remote screen can't be captured right now.",
+    "clipboard": "The clipboard couldn't be synchronized.",
+    "inputPermission": "The remote computer hasn't allowed control yet. Ask its owner to enable AetherLink under Accessibility.",
+    "invalid": "That request wasn't valid.",
+    "invalidTarget": "Enter a 9-digit ID or an address like host:port.",
+    "io": "A file or disk operation failed.",
+    "network": "The connection was interrupted.",
+    "peerNotFound": "No device with that ID is reachable. Check the ID, or configure a relay server in Settings.",
+    "resolve": "That address couldn't be found.",
+    "sessionNotFound": "This session has already ended.",
+    "terminal": "The remote terminal couldn't be started.",
+    "virtualDisplayUnsupported": "Virtual displays aren't available on this host yet.",
+    "wrongPassword": "Wrong password. Check the one-time password shown on the other device.",
+    "audioUnavailable": "The remote computer’s sound can’t be captured right now.",
+    "audioPermission": "The remote computer hasn’t allowed audio capture yet. On a Mac, ask its owner to enable AetherLink in System Settings → Privacy & Security → Screen & System Audio Recording.",
+    "audioOutputUnavailable": "No audio output device is available on this computer.",
+    "audioOutputNotFound": "That audio output device is no longer available.",
+    "hidNotStarted": "Start the iPhone control first."
+  },
+  "os": {
+    "macos": "macOS",
+    "windows": "Windows",
+    "linux": "Linux",
+    "android": "Android",
+    "ios": "iOS",
+    "unknown": "Unknown system"
+  },
+  "dashboard": {
+    "home": {
+      "title": "Home",
+      "subtitle": "Share this Mac or reach another device — end-to-end encrypted, peer to peer."
+    },
+    "identity": {
+      "title": "This device",
+      "subtitle": "Give your ID and one-time password to someone you trust",
+      "yourId": "Your ID",
+      "copyId": "Copy ID",
+      "idCopied": "ID copied",
+      "fingerprint": "Key fingerprint",
+      "oneTimePassword": "One-time password",
+      "expiresIn": "Time until the password changes",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "copyPassword": "Copy password",
+      "passwordCopied": "Password copied",
+      "regenerate": "New password",
+      "scanToPair": "Scan to pair",
+      "unavailable": "Identity unavailable"
+    },
+    "quickConnect": {
+      "title": "Quick Connect",
+      "subtitle": "Reach any device by its 9-digit ID",
+      "placeholder": "123-456-789",
+      "idLabel": "Partner ID",
+      "passwordPlaceholder": "One-time password (optional)",
+      "passwordLabel": "One-time password",
+      "connect": "Connect",
+      "hint": "Trusted devices connect without a password.",
+      "invalid": "IDs have 9 digits and never start with 0.",
+      "recent": "Recent"
+    },
+    "radar": {
+      "title": "Nearby",
+      "subtitle": "AetherLink devices on your local network",
+      "aria": "Radar showing devices on your local network",
+      "found": {
+        "one": "{count} device",
+        "other": "{count} devices"
+      },
+      "emptyTitle": "Listening for nearby devices",
+      "emptyBody": "Devices running AetherLink on this network will appear here.",
+      "unavailable": "Local discovery unavailable"
+    },
+    "host": {
+      "title": "Connected to this device",
+      "subtitle": "People currently viewing or controlling this Mac",
+      "emptyTitle": "No one is connected",
+      "emptyBody": "When someone connects, you’ll see them here and can disconnect them at any time.",
+      "notListening": "Incoming connections are paused.",
+      "since": "Connected {when}",
+      "kick": "Disconnect",
+      "kickTitle": "Disconnect {name}?",
+      "kickBody": "They’ll be removed from this device right away and can reconnect only with a new password or trust.",
+      "unavailable": "Session status unavailable",
+      "activeCount": {
+        "one": "{count} active connection",
+        "other": "{count} active connections"
+      }
+    },
+    "devices": {
+      "title": "Unattended devices"
+    },
+    "palette": {
+      "button": "Connect to…",
+      "open": "Open Quick Connect",
+      "placeholder": "Type a name or a 9-digit ID",
+      "empty": "No matching devices. Type a full ID to connect directly.",
+      "connectTo": "Connect to {id}",
+      "directHint": "Direct connection by ID",
+      "trusted": "Trusted",
+      "lan": "On this network",
+      "recent": "Recent"
+    }
+  },
+  "devices": {
+    "title": "Devices",
+    "subtitle": "Trusted devices you can reach without a password, plus everything nearby.",
+    "connectNew": "Connect new",
+    "online": "Online",
+    "offline": "Offline",
+    "lastSeen": "Seen {when}",
+    "remove": "Remove device",
+    "removeTitle": "Remove {name}?",
+    "removeBody": "You won’t be able to reach it unattended anymore. You can pair it again later.",
+    "removed": "{name} removed",
+    "emptyTitle": "No trusted devices yet",
+    "emptyBody": "Choose “Accept & Trust” when you connect to a device to reach it later without a password.",
+    "unavailable": "Devices unavailable"
+  },
+  "drives": {
+    "title": "Virtual Drives",
+    "subtitle": "Mount folders from other devices as if they were local, and choose what you share.",
+    "readOnly": "Read-only",
+    "readWrite": "Read & write",
+    "copyPath": "Copy mount path",
+    "unmount": "Eject",
+    "unmounted": "{name} ejected",
+    "mounted": {
+      "title": "Mounted drives",
+      "subtitle": "Remote folders available in Finder",
+      "emptyTitle": "No drives mounted",
+      "emptyBody": "During a session, use the drive button in the toolbar to mount a shared folder.",
+      "unavailable": "Mounted drives unavailable"
+    },
+    "shares": {
+      "title": "Shared from this Mac",
+      "subtitle": "Folders that connected peers may mount",
+      "pathPlaceholder": "/Users/you/Projects",
+      "pathLabel": "Folder path",
+      "add": "Share",
+      "added": "Now sharing {name}",
+      "remove": "Stop sharing",
+      "readOnly": "Share as read-only",
+      "drop": "Drop a folder here to share it",
+      "emptyTitle": "Nothing shared yet",
+      "emptyBody": "Add a folder to let connected devices mount it.",
+      "unavailable": "Shared folders unavailable"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Permissions, privacy and the way AetherLink behaves.",
+    "saved": "Settings saved",
+    "loadFailed": "Couldn’t load settings. Changes are disabled for now.",
+    "engineSettingsUnavailable": "Engine settings will be editable once the engine is connected. Language works right away.",
+    "permissions": {
+      "title": "Permissions health check",
+      "subtitle": "macOS needs these for others to see and control this Mac",
+      "allGood": "All set",
+      "missing": {
+        "one": "{count} permission missing",
+        "other": "{count} permissions missing"
+      },
+      "openSettings": "Open Settings",
+      "unavailable": "Permission status unavailable",
+      "status": {
+        "granted": "Allowed",
+        "denied": "Not allowed",
+        "notApplicable": "Not needed"
+      },
+      "screenRecording": {
+        "title": "Screen Recording",
+        "body": "Lets connected devices see your screen."
+      },
+      "accessibility": {
+        "title": "Accessibility",
+        "body": "Lets connected devices move the pointer, type and use semantic search."
+      },
+      "inputMonitoring": {
+        "title": "Input Monitoring",
+        "body": "Captures keyboard shortcuts reliably while you control another device."
+      }
+    },
+    "preferences": {
+      "title": "Preferences",
+      "subtitle": "Language, clipboard, relay and access"
+    },
+    "language": {
+      "title": "Language",
+      "body": "Switches instantly, including the menu bar."
+    },
+    "clipboard": {
+      "title": "Shared clipboard",
+      "body": "Choose how copy & paste flows between devices.",
+      "disabled": "Off",
+      "pushOnly": "Send only",
+      "bidirectional": "Both ways"
+    },
+    "relay": {
+      "title": "Relay server",
+      "body": "Used only when a direct connection isn’t possible. Traffic stays end-to-end encrypted.",
+      "placeholder": "relay.example.com:21116"
+    },
+    "unattended": {
+      "title": "Unattended access",
+      "body": "Trusted devices may connect without anyone at this Mac."
+    },
+    "consent": {
+      "title": "Ask before accepting",
+      "body": "Show a confirmation whenever a new device wants to connect."
+    },
+    "hotkeys": {
+      "title": "Keyboard shortcuts",
+      "subtitle": "Shortcuts handled by AetherLink instead of the remote device",
+      "hud": "Show or hide the session toolbar",
+      "hudBody": "Works while a session window is in front.",
+      "change": "Change",
+      "recording": "Press the new shortcut…",
+      "updated": "Shortcut updated",
+      "palette": "Semantic search in a session",
+      "terminal": "Remote terminal",
+      "quickConnect": "Quick Connect on the dashboard"
+    }
+  },
+  "consent": {
+    "badge": "Incoming request",
+    "title": "{name} wants to connect",
+    "body": "They’ll be able to see this screen and control it. Only accept if you know who this is.",
+    "verifyHint": "If you can, check the fingerprint with them over the phone or in person.",
+    "accept": "Accept",
+    "acceptTrust": "Accept & Trust",
+    "deny": "Deny",
+    "autoDeny": "Declines automatically in {seconds}s"
+  },
+  "palette": {
+    "semanticPlaceholder": "Search buttons, menus and fields on the remote screen",
+    "noResults": "Nothing matches on the remote screen.",
+    "navigate": "navigate",
+    "press": "press",
+    "connect": "connect",
+    "typeInto": "type into field",
+    "tabToType": "Press Tab to type into this field",
+    "typingInto": "Typing into: {label}",
+    "typePlaceholder": "Type the text, then press Return",
+    "close": "close",
+    "unnamed": "Untitled element"
+  },
+  "roles": {
+    "Window": "Window",
+    "Button": "Button",
+    "Link": "Link",
+    "TextField": "Text field",
+    "TextArea": "Text area",
+    "SearchField": "Search field",
+    "CheckBox": "Checkbox",
+    "RadioButton": "Radio button",
+    "Switch": "Switch",
+    "Slider": "Slider",
+    "ComboBox": "Combo box",
+    "PopUpButton": "Pop-up menu",
+    "Menu": "Menu",
+    "MenuItem": "Menu item",
+    "MenuBar": "Menu bar",
+    "Tab": "Tab",
+    "TabGroup": "Tab group",
+    "List": "List",
+    "ListItem": "List item",
+    "Table": "Table",
+    "Row": "Row",
+    "Cell": "Cell",
+    "Tree": "Tree",
+    "TreeItem": "Tree item",
+    "Toolbar": "Toolbar",
+    "Image": "Image",
+    "StaticText": "Text",
+    "Heading": "Heading",
+    "Group": "Group",
+    "ScrollArea": "Scroll area",
+    "WebArea": "Web page",
+    "Dialog": "Dialog",
+    "Other": "Element"
+  },
+  "session": {
+    "windowTitle": "{name} — AetherLink",
+    "noPending": "This window has no session to open. Start one from the dashboard.",
+    "closed": "The session has ended.",
+    "closedReason": "The session has ended: {reason}",
+    "displayN": "Display {n}",
+    "noDisplays": "Display list not available yet",
+    "noShares": "This device isn’t sharing any folders.",
+    "mounted": "Mounted at {path}",
+    "ghost": "Ghost Mode",
+    "ghostOn": "Ghost Mode on — the remote screen is curtained",
+    "ghostOff": "Ghost Mode off",
+    "losslessOn": "Lossless text on (4:4:4)",
+    "losslessOff": "Lossless text off",
+    "state": {
+      "connecting": "Connecting to {name}…",
+      "authenticating": "Verifying {name}…",
+      "connected": "Connected",
+      "reconnecting": "Connection lost — reconnecting…",
+      "failed": "Couldn’t connect"
+    },
+    "decoder": {
+      "webcodecs-unavailable": "Video decoding isn’t available in this window.",
+      "codec-unsupported": "This Mac can’t decode the remote video format ({detail}).",
+      "decode-failed": "Video decoding hiccup — waiting for the next keyframe."
+    },
+    "hud": {
+      "aria": "Session toolbar",
+      "display": "Displays",
+      "lossless": "Lossless text (4:4:4)",
+      "audio": "Remote audio — mute / unmute",
+      "audioMenu": "Audio options",
+      "drives": "Mount a shared folder",
+      "ports": "Port forwarding",
+      "terminal": "Terminal",
+      "search": "Semantic search (⌘K)",
+      "dvr": "Time-Travel DVR",
+      "ghost": "Ghost Mode",
+      "pip": "Display map",
+      "telemetry": "Frame rate, latency and bitrate",
+      "disconnect": "Disconnect"
+    },
+    "audio": {
+      "title": "Remote audio",
+      "stream": "Play the remote computer’s sound",
+      "volume": "Volume",
+      "percent": "{n}%",
+      "mute": "Mute",
+      "output": "Output",
+      "systemDefault": "System default",
+      "onToast": "Remote audio on",
+      "mutedToast": "Remote audio muted",
+      "stats": "{kbps} kbps · {delay} ms buffer · {lost} concealed"
+    },
+    "telemetry": {
+      "fps": "fps",
+      "ms": "ms",
+      "mbps": "Mb/s"
+    },
+    "virtual": {
+      "title": "Virtual display",
+      "fhd": "Add Full HD display",
+      "qhd": "Add QHD display",
+      "ultrawide": "Add 32:9 ultrawide display",
+      "remove": "Remove virtual display",
+      "name": "Virtual display {w}×{h}",
+      "creating": "Creating the virtual display on the host…"
+    }
+  },
+  "ports": {
+    "title": "Port forwarding",
+    "subtitle": "Reach services running on the remote device",
+    "scan": "Scan",
+    "forwardToggle": "Forward this port",
+    "copyAddress": "Copy local address",
+    "unknownService": "Unknown service",
+    "pid": "PID {pid}",
+    "emptyTitle": "No listening ports found",
+    "emptyBody": "Start a server on the remote device, then scan again."
+  },
+  "terminal": {
+    "title": "Terminal",
+    "connecting": "Opening a shell…",
+    "end": "End shell",
+    "hide": "Hide terminal"
+  },
+  "dvr": {
+    "title": "Time-Travel",
+    "timeline": "Session timeline",
+    "live": "LIVE",
+    "backToLive": "Back to live",
+    "pause": "Pause",
+    "resume": "Resume live",
+    "ocr": "Copy text",
+    "ocrTitle": "Text on screen",
+    "ocrEmpty": "No text was recognized in this frame.",
+    "windowLength": "Last {duration} recorded",
+    "behindLive": "{time} behind live",
+    "kinds": {
+      "Keyframe": "Keyframe",
+      "Clipboard": "Clipboard",
+      "Terminal": "Terminal",
+      "FileTransfer": "File transfer",
+      "ResourceSpike": "Resource spike",
+      "Alert": "Alert",
+      "Input": "Input"
+    }
+  },
+  "transfer": {
+    "dropTo": "Drop to send to {name}",
+    "preparing": "Preparing…",
+    "progress": "{done} of {total}",
+    "failed": "Transfer failed",
+    "sendingCount": {
+      "one": "Sending {count} file",
+      "other": "Sending {count} files"
+    },
+    "sentCount": {
+      "one": "{count} file sent",
+      "other": "{count} files sent"
+    }
+  },
+  "pip": {
+    "title": "Display map",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "fit": "Fit to window",
+    "follow": "Follow the pointer"
+  },
+  "tray": {
+    "idLabel": "ID {id}",
+    "idUnknown": "ID not available yet",
+    "copyId": "Copy ID",
+    "connections": {
+      "one": "{count} active connection",
+      "other": "{count} active connections"
+    },
+    "quickConnect": "Quick Connect…",
+    "ghostMode": "Ghost Mode",
+    "language": "Language",
+    "show": "Open AetherLink",
+    "quit": "Quit AetherLink"
+  },
+  "hid": {
+    "title": "Control iPhone & iPad",
+    "subtitle": "iOS can't be controlled by software — AetherLink presents this computer as a Bluetooth keyboard and trackpad instead.",
+    "connect": {
+      "title": "Connection",
+      "subtitle": "Choose how this computer appears to the iPhone or iPad."
+    },
+    "backend": {
+      "label": "Method",
+      "mac": "This Mac's Bluetooth",
+      "bluez": "This computer's Bluetooth (BlueZ)",
+      "dongle": "AetherLink HID dongle (ESP32-S3)",
+      "none": "No method available",
+      "noneBody": "Turn on Bluetooth or plug in the AetherLink dongle, then come back."
+    },
+    "target": {
+      "label": "Device",
+      "iphone": "iPhone",
+      "ipad": "iPad"
+    },
+    "start": "Start",
+    "stop": "Stop",
+    "startedToast": "Ready — connect from the iPhone or pick it below",
+    "state": {
+      "stopped": "Not active",
+      "listening": "Waiting for the device…",
+      "connecting": "Connecting to {peer}…",
+      "connected": "Connected to {peer}"
+    },
+    "paired": {
+      "title": "Paired devices",
+      "connect": "Connect",
+      "connected": "Connected"
+    },
+    "steps": {
+      "title": "First time",
+      "pair": "Pair the iPhone or iPad with this computer in Bluetooth settings.",
+      "assistive": "On the device, turn on Settings → Accessibility → Touch → AssistiveTouch to see the pointer.",
+      "start": "Start here, then connect the device from the list."
+    },
+    "pad": {
+      "title": "Trackpad",
+      "subtitle": "Click to take control; your mouse and keyboard now drive the device.",
+      "aria": "Trackpad for the connected device",
+      "idle": "Connect a device to begin",
+      "ready": "Click to take control",
+      "captured": "Controlling the device",
+      "hint": "Pointer, clicks, scrolling and keyboard go to the iPhone or iPad.",
+      "release": "Press Esc to release the mouse",
+      "needConnection": "Connect an iPhone or iPad first"
+    },
+    "text": {
+      "label": "Text to type on the device",
+      "placeholder": "Type text to send…",
+      "send": "Send"
+    }
+  }
+}

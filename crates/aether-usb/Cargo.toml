@@ -1,0 +1,26 @@
+[package]
+name = "aether-usb"
+description = "AetherLink USB redirection: descriptor parsing, USB/IP wire format + server, libusb host backend"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = ["libusb"]
+# Host backend via rusb. Uses a vendored (statically built) libusb so no system library is required.
+libusb = ["dep:rusb"]
+
+[dependencies]
+aether-protocol.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+tokio = { workspace = true }
+parking_lot.workspace = true
+async-trait.workspace = true
+
+# libusb has no iOS backend (apps cannot access USB hosts there); see the stub in lib.rs.
+[target.'cfg(not(target_os = "ios"))'.dependencies]
+rusb = { version = "0.9", optional = true, features = ["vendored"] }
+
+[dev-dependencies]
+tokio = { workspace = true }

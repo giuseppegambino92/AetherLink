@@ -1,0 +1,3 @@
+"CFBundleDisplayName" = "AetherLink";
+"NSCameraUsageDescription" = "AetherLink usa la fotocamera per leggere il codice QR del dispositivo a cui vuoi collegarti.";
+"NSLocalNetworkUsageDescription" = "AetherLink trova i tuoi dispositivi sulla rete locale e si collega a loro.";

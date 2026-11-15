@@ -1,0 +1,368 @@
+/* Reset, canvas, typography, app shell. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-ui);
+  font-size: var(--fs-14);
+  line-height: 1.45;
+  letter-spacing: -0.006em;
+  color: var(--text-1);
+  background-color: var(--ink-1);
+  background-image:
+    radial-gradient(1100px 700px at -8% -12%, var(--light-a), transparent 60%),
+    radial-gradient(900px 640px at 108% 112%, var(--light-b), transparent 62%),
+    radial-gradient(700px 420px at 72% -18%, var(--light-c), transparent 70%);
+  background-attachment: fixed;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+/* Inside Tauri the native vibrancy shows through a tinted, slightly translucent canvas. */
+.app-root {
+  height: 100%;
+}
+
+html.is-tauri body {
+  background-color: rgba(11, 14, 20, 0.78);
+}
+
+html.is-session body {
+  background: #050609;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+button {
+  cursor: default;
+}
+
+input,
+textarea {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+svg {
+  display: block;
+  flex: none;
+}
+
+.mono,
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+::selection {
+  background: rgba(138, 184, 255, 0.32);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ------------------------------------------------------------ title bar */
+.titlebar {
+  position: fixed;
+  inset: 0 0 auto var(--sidebar-w);
+  background: linear-gradient(180deg, rgba(11, 14, 20, 0.82) 0%, rgba(11, 14, 20, 0.55) 60%, rgba(11, 14, 20, 0) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent);
+  mask-image: linear-gradient(180deg, #000 70%, transparent);
+  height: var(--titlebar-h);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 var(--s-5);
+  pointer-events: auto;
+}
+
+.titlebar > * {
+  pointer-events: auto;
+}
+
+/* ------------------------------------------------------------ dashboard shell */
+.app-shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  height: 100%;
+}
+
+.sidebar {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: calc(var(--titlebar-h) + var(--s-3)) var(--s-3) var(--s-4);
+  background: linear-gradient(180deg, rgba(18, 22, 31, 0.55), rgba(12, 15, 22, 0.42));
+  border-right: 1px solid var(--hairline);
+  backdrop-filter: var(--blur-2);
+  -webkit-backdrop-filter: var(--blur-2);
+}
+
+.sidebar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--specular);
+  opacity: 0.6;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: 0 var(--s-3) var(--s-5);
+}
+
+.brand-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(160deg, #1d2536, #0d1119);
+  box-shadow: var(--specular-edge), 0 6px 18px -6px rgba(110, 164, 255, 0.5);
+  color: var(--accent);
+}
+
+.brand-name {
+  font-family: var(--font-display);
+  font-weight: 650;
+  font-size: var(--fs-16);
+  letter-spacing: -0.015em;
+}
+
+.brand-sub {
+  font-size: var(--fs-11);
+  color: var(--text-3);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  height: 38px;
+  padding: 0 var(--s-3);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-2);
+  font-weight: 520;
+  text-align: left;
+  transition: background var(--dur-1) ease, color var(--dur-1) ease;
+}
+
+.nav-item:hover {
+  background: var(--glass-hover);
+  color: var(--text-1);
+}
+
+.nav-item[aria-current="page"] {
+  color: var(--text-1);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035));
+  box-shadow: var(--specular-edge);
+}
+
+.nav-item[aria-current="page"] svg {
+  color: var(--accent);
+}
+
+.nav-item .nav-badge {
+  margin-left: auto;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.content {
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: calc(var(--titlebar-h) + var(--s-2)) var(--s-8) var(--s-8);
+  scroll-padding-top: var(--titlebar-h);
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-5);
+  margin: var(--s-2) 0 var(--s-6);
+}
+
+.page-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-34);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.page-subtitle {
+  margin: var(--s-2) 0 0;
+  color: var(--text-2);
+  font-size: var(--fs-14);
+  max-width: 62ch;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--s-5);
+}
+
+.span-12 { grid-column: span 12; }
+.span-8 { grid-column: span 8; }
+.span-7 { grid-column: span 7; }
+.span-6 { grid-column: span 6; }
+.span-5 { grid-column: span 5; }
+.span-4 { grid-column: span 4; }
+
+@media (max-width: 1180px) {
+  .span-7,
+  .span-5,
+  .span-8,
+  .span-4 {
+    grid-column: span 12;
+  }
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.section-label {
+  font-size: var(--fs-11);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.muted {
+  color: var(--text-2);
+}
+
+.faint {
+  color: var(--text-3);
+}
+
+/* Dev preview ribbon — only rendered by the browser-only adapter. */
+.dev-ribbon {
+  position: fixed;
+  z-index: 200;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 8px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-12);
+  font-weight: 600;
+  color: #1b1405;
+  background: linear-gradient(180deg, #ffd88a, #f2b956);
+  box-shadow: 0 8px 26px -8px rgba(242, 185, 86, 0.6);
+  pointer-events: none;
+}
+
+.dev-ribbon .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1b1405;
+  opacity: 0.7;
+}
