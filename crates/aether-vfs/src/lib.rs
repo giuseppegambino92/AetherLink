@@ -26,8 +26,10 @@
 //! (`openat2(RESOLVE_BENEATH)` on Linux when available). Symlinks are followed only while
 //! they stay beneath the root (absolute targets are refused), and a directory swapped for a
 //! symlink by another local process between resolution and use cannot redirect the
-//! operation (see `beneath`). On other platforms paths are canonicalized and checked
-//! against the root, and every opened file is re-checked by handle. Namespace-changing
+//! operation (see `beneath`). On Windows every directory from the root to the target is
+//! pinned (held open without `FILE_SHARE_DELETE`) for the whole operation, so it cannot be
+//! renamed or replaced by a junction meanwhile; final links are never followed by namespace
+//! operations, and every opened file is re-checked by handle. Namespace-changing
 //! operations are also serialized per share so a peer cannot race its own requests.
 //! Symlinks created through the VFS must have relative targets that stay inside the share.
 

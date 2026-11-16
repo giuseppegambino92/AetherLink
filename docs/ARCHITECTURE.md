@@ -361,14 +361,19 @@ Settings, shares and the trust store are written with `aether_net::write_private
 the same way, so the levels to restore survive a crash or power loss while the screen is dark.
 
 ### Shared folders and file transfer
-- **Path resolution without races (Unix).** `aether-vfs` resolves every request from a directory
+- **Path resolution without races (Unix and Windows).** `aether-vfs` resolves every request from a directory
   descriptor of the share root, one component at a time with `openat(O_NOFOLLOW | O_DIRECTORY)`, and
   performs the final operation relative to the resolved parent (`openat`, `mkdirat`, `unlinkat`,
   `renameat`, …). On Linux it uses `openat2(RESOLVE_BENEATH | RESOLVE_NO_MAGICLINKS)` when the kernel
   offers it. Swapping a directory for a symlink after the check cannot redirect an operation outside
-  the share; tests cover this race explicitly. On Windows, opened files are re-checked by handle
-  (`GetFinalPathNameByHandleW`). Namespace operations there still act on canonical paths, a residual
-  risk documented in the code.
+  the share; tests cover this race explicitly. On Windows, every directory between the share root
+  and the target is *pinned* for the duration of the operation: opened without following reparse
+  points, with `FILE_LIST_DIRECTORY` access and a share mode without `FILE_SHARE_DELETE`. While it is
+  held, no process can rename or delete that directory or replace it with a junction. A Windows test
+  reproduces this attack (it fails if a pinned directory can be moved mid-operation). Namespace
+  operations never follow a final link, and opened files are re-checked by handle
+  (`GetFinalPathNameByHandleW`). On both platforms links are followed only while they stay inside
+  the share.
 - **Arithmetic.** Offer totals use `try_fold` + `checked_add`, and chunk bounds use `checked_add`, so
   hostile sizes and offsets are rejected instead of wrapping.
 - **Staging.** An incoming transfer is written into a private (`0700`) staging directory with a random

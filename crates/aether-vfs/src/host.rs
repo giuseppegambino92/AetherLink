@@ -628,38 +628,161 @@ mod ops {
     }
 }
 
-/// Other platforms (Windows): path-based operations on canonicalized paths. Opened files
-/// are re-checked by handle (`GetFinalPathNameByHandleW`) to still lie inside the share.
-/// Residual risk: namespace operations (create, mkdir, remove, rename, symlink) act on a
-/// canonical *path*, so a concurrent local process able to replace a directory with a
-/// junction between the check and the operation could redirect that single operation.
+/// Other platforms (Windows): every directory on the way from the share root to the parent
+/// of the target is *pinned* — opened, without following reparse points, with a share mode
+/// that omits `FILE_SHARE_DELETE` — and held open for the whole operation. While a directory
+/// is pinned, no process can rename it, delete it or replace it with a junction or symlink
+/// (all of these need `DELETE` access, which the share mode refuses), and NTFS refuses to
+/// rename an ancestor of an open handle. The path the operation then uses therefore names
+/// the same directories that were checked: the Windows counterpart of the descriptor-relative
+/// walk used on Unix. The final component is never followed by namespace operations
+/// (create-new, mkdir, remove, rename and symlink act on the link itself); files that are
+/// opened are additionally re-checked by handle (`GetFinalPathNameByHandleW`).
+///
+/// Links met while walking are followed only if they stay beneath the root, with the same
+/// rules as on Unix (relative targets walked inside the share, at most 40 links; absolute
+/// targets accepted only when they point inside the share root).
 #[cfg(not(unix))]
 mod ops {
     use super::*;
+    use std::collections::VecDeque;
     use std::fs::{Metadata, OpenOptions};
+    use std::path::Component;
 
-    /// Canonicalize `root/comps…` (following symlinks) and require it to stay inside the root.
-    fn canon_existing(s: &Share, comps: &[&str]) -> HResult<PathBuf> {
-        let mut p = s.root.clone();
-        p.extend(comps);
-        let c = fs::canonicalize(&p).map_err(io_err)?;
-        if !c.starts_with(&s.root) {
-            return err(
-                VfsErrorKind::PermissionDenied,
-                "path resolves outside of the share",
-            );
-        }
-        Ok(c)
+    /// Maximum number of links expanded while resolving one path (as on Unix).
+    const MAX_LINKS: u32 = 40;
+
+    /// Directories held open (pinned) for the duration of one operation, root first.
+    pub(super) struct Pinned {
+        _held: Vec<File>,
+        /// Path of the deepest pinned directory.
+        pub(super) dir: PathBuf,
     }
 
-    /// Canonical parent directory (inside the share) + final component (not followed).
-    fn parent_and_name<'a>(s: &Share, comps: &[&'a str]) -> HResult<(PathBuf, &'a str)> {
-        let (name, parent) = comps.split_last().expect("non-empty components");
-        let parent = canon_existing(s, parent)?;
-        if !fs::metadata(&parent).map_err(io_err)?.is_dir() {
-            return err(VfsErrorKind::NotADirectory, "parent is not a directory");
+    fn outside<T>() -> HResult<T> {
+        err(
+            VfsErrorKind::PermissionDenied,
+            "path resolves outside of the share",
+        )
+    }
+
+    /// Open `p` itself (a reparse point is not followed) so that it can be neither renamed
+    /// nor deleted while the handle lives.
+    #[cfg(windows)]
+    fn open_pin(p: &Path) -> io::Result<File> {
+        use std::os::windows::fs::OpenOptionsExt;
+        use windows_sys::Win32::Storage::FileSystem::{
+            FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT, FILE_LIST_DIRECTORY,
+            FILE_READ_ATTRIBUTES, FILE_SHARE_READ, FILE_SHARE_WRITE,
+        };
+        // A data right (`FILE_LIST_DIRECTORY` = `FILE_READ_DATA`) is required: an open with
+        // attribute rights only is not recorded for share-access checks and would pin nothing.
+        OpenOptions::new()
+            .access_mode(FILE_LIST_DIRECTORY | FILE_READ_ATTRIBUTES)
+            .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
+            .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT)
+            .open(p)
+    }
+
+    #[cfg(not(windows))]
+    fn open_pin(p: &Path) -> io::Result<File> {
+        File::open(p)
+    }
+
+    /// Strip the `\\?\` verbatim prefix so link targets and the canonical root compare.
+    fn plain(p: &Path) -> PathBuf {
+        let s = p.as_os_str().to_string_lossy();
+        match s.strip_prefix(r"\\?\UNC\") {
+            Some(rest) => PathBuf::from(format!(r"\\{rest}")),
+            None => PathBuf::from(s.strip_prefix(r"\\?\").unwrap_or(&s).to_string()),
         }
-        Ok((parent, name))
+    }
+
+    /// Resolve and pin the directory `root/comps…`.
+    pub(super) fn pin_dir(s: &Share, comps: &[&str]) -> HResult<Pinned> {
+        let root = open_pin(&s.root).map_err(io_err)?;
+        check_inside(s, &root)?;
+        let md = root.metadata().map_err(io_err)?;
+        if md.file_type().is_symlink() || !md.is_dir() {
+            return err(VfsErrorKind::NotADirectory, "share root is not a directory");
+        }
+        let root_plain = plain(&s.root);
+        let mut held = vec![root];
+        let mut dir = s.root.clone();
+        let mut queue: VecDeque<String> = comps.iter().map(|c| (*c).to_owned()).collect();
+        let mut links = 0u32;
+        while let Some(c) = queue.pop_front() {
+            match c.as_str() {
+                "" | "." => continue,
+                ".." => {
+                    // Applied to the walk's own stack; never above the root.
+                    if held.len() == 1 {
+                        return outside();
+                    }
+                    held.pop();
+                    dir.pop();
+                    continue;
+                }
+                _ => {}
+            }
+            let next = dir.join(&c);
+            let f = open_pin(&next).map_err(io_err)?;
+            let md = f.metadata().map_err(io_err)?;
+            if md.file_type().is_symlink() {
+                links += 1;
+                if links > MAX_LINKS {
+                    return err(VfsErrorKind::Io, "too many levels of symbolic links");
+                }
+                drop(f);
+                let target = fs::read_link(&next).map_err(io_err)?;
+                let parts = if target.has_root() {
+                    // Junctions always hold absolute targets: accept those inside the share
+                    // and restart the walk from the (still pinned) root.
+                    let Ok(rest) = plain(&target).strip_prefix(&root_plain).map(Path::to_path_buf)
+                    else {
+                        return outside();
+                    };
+                    held.truncate(1);
+                    dir = s.root.clone();
+                    path_parts(&rest)?
+                } else {
+                    path_parts(&target)?
+                };
+                for t in parts.into_iter().rev() {
+                    queue.push_front(t);
+                }
+                continue;
+            }
+            if !md.is_dir() {
+                return err(VfsErrorKind::NotADirectory, "parent is not a directory");
+            }
+            held.push(f);
+            dir = next;
+        }
+        Ok(Pinned { _held: held, dir })
+    }
+
+    /// Components of a relative link target (`..` kept for the walk, drive or root refused).
+    fn path_parts(p: &Path) -> HResult<Vec<String>> {
+        let mut out = Vec::new();
+        for c in p.components() {
+            match c {
+                Component::Normal(n) => match n.to_str() {
+                    Some(n) => out.push(n.to_owned()),
+                    None => return err(VfsErrorKind::Io, "link target is not valid UTF-8"),
+                },
+                Component::ParentDir => out.push("..".to_owned()),
+                Component::CurDir => {}
+                Component::Prefix(_) | Component::RootDir => return outside(),
+            }
+        }
+        Ok(out)
+    }
+
+    /// Pinned parent directory (inside the share) + final component (not followed).
+    fn parent_and_name<'a>(s: &Share, comps: &[&'a str]) -> HResult<(Pinned, &'a str)> {
+        let (name, parent) = comps.split_last().expect("non-empty components");
+        Ok((pin_dir(s, parent)?, name))
     }
 
     fn open_file(s: &Share, p: &Path, opts: &OpenOptions) -> HResult<File> {
@@ -697,10 +820,7 @@ mod ops {
         }
         let real = PathBuf::from(OsString::from_wide(&buf));
         if !real.starts_with(&s.root) {
-            return err(
-                VfsErrorKind::PermissionDenied,
-                "path resolves outside of the share",
-            );
+            return outside();
         }
         Ok(())
     }
@@ -716,21 +836,21 @@ mod ops {
             return Ok(attr_of(s, &md, rel));
         }
         let (parent, name) = parent_and_name(s, comps)?;
-        let md = fs::symlink_metadata(parent.join(name)).map_err(io_err)?;
+        let md = fs::symlink_metadata(parent.dir.join(name)).map_err(io_err)?;
         Ok(attr_of(s, &md, rel))
     }
 
     pub(super) fn read_dir(s: &Share, comps: &[&str], rel: &str) -> HResult<Vec<DirEntry>> {
-        let dir = canon_existing(s, comps)?;
-        let md = fs::metadata(&dir).map_err(io_err)?;
-        if !md.is_dir() {
-            return err(
-                VfsErrorKind::NotADirectory,
-                format!("{rel:?} is not a directory"),
-            );
-        }
+        let pinned = pin_dir(s, comps).map_err(|e| {
+            if e.0 == VfsErrorKind::NotADirectory {
+                (e.0, format!("{rel:?} is not a directory"))
+            } else {
+                e
+            }
+        })?;
+        let dir = &pinned.dir;
         let mut entries = Vec::new();
-        for ent in fs::read_dir(&dir).map_err(io_err)? {
+        for ent in fs::read_dir(dir).map_err(io_err)? {
             let ent = ent.map_err(io_err)?;
             let Ok(name) = ent.file_name().into_string() else {
                 tracing::debug!("skipping non-UTF-8 file name in {}", dir.display());
@@ -747,14 +867,18 @@ mod ops {
     }
 
     pub(super) fn open_existing(s: &Share, comps: &[&str], write: bool) -> HResult<File> {
-        let p = canon_existing(s, comps)?;
+        let Some((name, parent)) = comps.split_last() else {
+            return err(VfsErrorKind::IsADirectory, "the share root is a directory");
+        };
+        let pinned = pin_dir(s, parent)?;
         let mut o = OpenOptions::new();
         if write {
             o.write(true);
         } else {
             o.read(true);
         }
-        open_file(s, &p, &o)
+        // A final link may be followed; the opened handle is then checked to be inside.
+        open_file(s, &pinned.dir.join(name), &o)
     }
 
     pub(super) fn file_attr(s: &Share, f: &File, rel: &str) -> HResult<FileAttr> {
@@ -769,7 +893,7 @@ mod ops {
         rel: &str,
     ) -> HResult<FileAttr> {
         let (parent, name) = parent_and_name(s, comps)?;
-        let full = parent.join(name);
+        let full = parent.dir.join(name);
         race_hook();
         let md = match fs::symlink_metadata(&full) {
             Ok(_) if exclusive => {
@@ -782,11 +906,13 @@ mod ops {
                 return err(VfsErrorKind::IsADirectory, format!("{rel:?} is a directory"));
             }
             Ok(md) if md.file_type().is_symlink() => {
-                let target = canon_existing(s, comps)?;
-                fs::metadata(target).map_err(io_err)?
+                // Report the target's attributes, but only if the link stays inside.
+                let f = open_file(s, &full, OpenOptions::new().read(true))?;
+                f.metadata().map_err(io_err)?
             }
             Ok(md) => md,
             Err(e) if e.kind() == io::ErrorKind::NotFound => {
+                // CREATE_NEW never follows a link planted at the final name.
                 let f = open_file(s, &full, OpenOptions::new().write(true).create_new(true))?;
                 f.metadata().map_err(io_err)?
             }
@@ -797,7 +923,7 @@ mod ops {
 
     pub(super) fn mkdir(s: &Share, comps: &[&str], rel: &str) -> HResult<FileAttr> {
         let (parent, name) = parent_and_name(s, comps)?;
-        let full = parent.join(name);
+        let full = parent.dir.join(name);
         race_hook();
         fs::create_dir(&full).map_err(io_err)?;
         let md = fs::symlink_metadata(&full).map_err(io_err)?;
@@ -806,8 +932,9 @@ mod ops {
 
     pub(super) fn remove(s: &Share, comps: &[&str]) -> HResult<()> {
         let (parent, name) = parent_and_name(s, comps)?;
-        let full = parent.join(name);
+        let full = parent.dir.join(name);
         race_hook();
+        // DeleteFileW / RemoveDirectoryW act on a link itself, never on its target.
         let md = fs::symlink_metadata(&full).map_err(io_err)?;
         if md.is_dir() {
             fs::remove_dir(&full)
@@ -821,7 +948,8 @@ mod ops {
         let (fp, fname) = parent_and_name(s, from)?;
         let (tp, tname) = parent_and_name(s, to)?;
         race_hook();
-        fs::rename(fp.join(fname), tp.join(tname)).map_err(io_err)
+        // MoveFileExW moves a link itself, never its target.
+        fs::rename(fp.dir.join(fname), tp.dir.join(tname)).map_err(io_err)
     }
 
     pub(super) fn symlink(
@@ -831,7 +959,7 @@ mod ops {
         rel: &str,
     ) -> HResult<FileAttr> {
         let (parent, name) = parent_and_name(s, comps)?;
-        let full = parent.join(name);
+        let full = parent.dir.join(name);
         race_hook();
         make_symlink(target, &full).map_err(io_err)?;
         let md = fs::symlink_metadata(&full).map_err(io_err)?;
@@ -840,7 +968,7 @@ mod ops {
 
     pub(super) fn read_link(s: &Share, comps: &[&str]) -> HResult<String> {
         let (parent, name) = parent_and_name(s, comps)?;
-        let t = fs::read_link(parent.join(name)).map_err(io_err)?;
+        let t = fs::read_link(parent.dir.join(name)).map_err(io_err)?;
         Ok(t.to_str()
             .ok_or((
                 VfsErrorKind::Io,
@@ -1116,5 +1244,89 @@ mod tests {
             matches!(r, VfsResponse::Data { ref data, eof: true } if data.is_empty()),
             "{r:?}"
         );
+    }
+}
+
+#[cfg(all(test, windows))]
+mod windows_tests {
+    use super::*;
+    use std::cell::Cell;
+    use std::rc::Rc;
+
+    /// While an operation runs, a hostile local process tries to move `sub` away (the first
+    /// step of replacing it with a junction). Pinning must make that fail, and the operation
+    /// must land in the directory that was checked.
+    #[test]
+    fn pinned_parent_cannot_be_swapped_during_an_operation() {
+        let t = tempfile::tempdir().unwrap();
+        let root = t.path().join("share");
+        type MakeRequest = Box<dyn Fn(u32) -> VfsRequest>;
+        let ops: [(&str, MakeRequest); 3] = [
+            (
+                "create",
+                Box::new(|share| VfsRequest::Create {
+                    share,
+                    path: "sub/new.txt".into(),
+                    exclusive: true,
+                }),
+            ),
+            (
+                "mkdir",
+                Box::new(|share| VfsRequest::Mkdir {
+                    share,
+                    path: "sub/new.txt".into(),
+                }),
+            ),
+            (
+                "remove",
+                Box::new(|share| VfsRequest::Remove {
+                    share,
+                    path: "sub/victim".into(),
+                }),
+            ),
+        ];
+        for (what, req) in ops {
+            let _ = fs::remove_dir_all(&root);
+            fs::create_dir_all(root.join("sub")).unwrap();
+            fs::write(root.join("sub/victim"), b"x").unwrap();
+            let mut reg = ShareRegistry::new();
+            let id = reg.add("s", &root, false).unwrap();
+            let host = VfsHost::new(reg);
+            let root = fs::canonicalize(&root).unwrap();
+            let moved = Rc::new(Cell::new(false));
+            let (r2, m2) = (root.clone(), moved.clone());
+            RACE_HOOK.with(|h| {
+                *h.borrow_mut() = Some(Box::new(move || {
+                    m2.set(fs::rename(r2.join("sub"), r2.join("sub_moved")).is_ok());
+                }))
+            });
+            let r = host.handle(req(id));
+            assert!(!moved.get(), "{what}: a pinned directory was renamed mid-operation");
+            assert!(!matches!(r, VfsResponse::Error { .. }), "{what}: {r:?}");
+            assert!(root.join("sub").is_dir(), "{what}");
+        }
+    }
+
+    #[test]
+    fn links_outside_the_share_are_refused() {
+        let t = tempfile::tempdir().unwrap();
+        let root = t.path().join("share");
+        let outside = t.path().join("outside");
+        fs::create_dir_all(&root).unwrap();
+        fs::create_dir_all(&outside).unwrap();
+        // Directory symlinks need Developer Mode or the privilege; skip quietly otherwise.
+        if std::os::windows::fs::symlink_dir(&outside, root.join("out")).is_err() {
+            return;
+        }
+        let mut reg = ShareRegistry::new();
+        let id = reg.add("s", &root, false).unwrap();
+        let host = VfsHost::new(reg);
+        let r = host.handle(VfsRequest::Create {
+            share: id,
+            path: "out/escape.txt".into(),
+            exclusive: true,
+        });
+        assert!(matches!(r, VfsResponse::Error { .. }), "{r:?}");
+        assert!(!outside.join("escape.txt").exists());
     }
 }
