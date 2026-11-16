@@ -66,10 +66,12 @@ jobs:
 
       - name: Show the file system under test
         shell: pwsh
+        continue-on-error: true
         run: |
           $tmp = [System.IO.Path]::GetTempPath()
           "Temp dir: $tmp"
-          fsutil fsinfo volumeinfo ($tmp.Substring(0, 3))
+          $letter = (Resolve-Path $tmp).Path.Substring(0, 1)
+          Get-Volume -DriveLetter $letter | Format-List DriveLetter, FileSystem, FileSystemLabel, Size
 
       - name: Require link tests
         if: matrix.links
