@@ -135,6 +135,10 @@ impl ShareRegistry {
     }
 }
 
+/// How old an mtime must be before it is trusted to change on the next write: FAT stores
+/// modification times with 2 s granularity (rounded either way), plus a margin.
+const MTIME_SETTLE: std::time::Duration = std::time::Duration::from_secs(3);
+
 type HResult<T> = std::result::Result<T, (VfsErrorKind, String)>;
 
 fn err<T>(kind: VfsErrorKind, msg: impl Into<String>) -> HResult<T> {
@@ -254,6 +258,13 @@ impl VfsHost {
                 let comps = comps(&path)?;
                 let mut f = ops::open_existing(&s, &comps, false)?;
                 regular_file(&f, &path)?;
+                // Judged before reading, against the host's own clock (no skew with the peer).
+                let settled = f
+                    .metadata()
+                    .and_then(|m| m.modified())
+                    .ok()
+                    .and_then(|m| std::time::SystemTime::now().duration_since(m).ok())
+                    .is_some_and(|age| age >= MTIME_SETTLE);
                 let mut hashes = Vec::new();
                 let mut buf = vec![0u8; VFS_CHUNK_SIZE as usize];
                 loop {
@@ -266,9 +277,10 @@ impl VfsHost {
                         break;
                     }
                 }
-                Ok(VfsResponse::Hashes {
+                Ok(VfsResponse::HashesV2 {
                     chunk_size: VFS_CHUNK_SIZE,
                     hashes,
+                    settled,
                 })
             }
             VfsRequest::Write {

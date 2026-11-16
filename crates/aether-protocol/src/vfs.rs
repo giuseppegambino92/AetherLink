@@ -84,6 +84,15 @@ pub enum VfsResponse {
     Link { target: String },
     Ok,
     Error { kind: VfsErrorKind, message: String },
+    /// Like `Hashes`, plus whether the file's mtime is *settled*: old enough, by the host's
+    /// own clock, that any later write must change it even on file systems with coarse
+    /// timestamps (FAT: 2 s). Only settled `(mtime, size) → hashes` pairs may be remembered;
+    /// otherwise a same-size rewrite within the same timestamp tick would look unchanged.
+    HashesV2 {
+        chunk_size: u32,
+        hashes: Vec<[u8; 32]>,
+        settled: bool,
+    },
 }
 
 /// Request/response correlation wrapper (requests are pipelined on one stream).

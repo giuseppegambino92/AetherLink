@@ -260,6 +260,13 @@ impl VfsClient {
 
     /// BLAKE3 hashes of each [`VFS_CHUNK_SIZE`] chunk of a file.
     pub async fn chunk_hashes(&self, share: u32, path: &str) -> Result<Vec<[u8; 32]>> {
+        Ok(self.chunk_hashes_settled(share, path).await?.0)
+    }
+
+    /// Chunk hashes plus whether the host judged the file's mtime settled (see
+    /// [`VfsResponse::HashesV2`]). Hosts that predate the flag answer `Hashes`, taken as
+    /// settled (the previous behaviour).
+    async fn chunk_hashes_settled(&self, share: u32, path: &str) -> Result<(Vec<[u8; 32]>, bool)> {
         match self
             .call(VfsRequest::ChunkHashes {
                 share,
@@ -268,11 +275,18 @@ impl VfsClient {
             .await?
         {
             VfsResponse::Hashes { chunk_size, hashes } if chunk_size == VFS_CHUNK_SIZE => {
-                Ok(hashes)
+                Ok((hashes, true))
             }
-            VfsResponse::Hashes { chunk_size, .. } => Err(VfsError::Protocol(format!(
-                "unexpected chunk size {chunk_size}"
-            ))),
+            VfsResponse::HashesV2 {
+                chunk_size,
+                hashes,
+                settled,
+            } if chunk_size == VFS_CHUNK_SIZE => Ok((hashes, settled)),
+            VfsResponse::Hashes { chunk_size, .. } | VfsResponse::HashesV2 { chunk_size, .. } => {
+                Err(VfsError::Protocol(format!(
+                    "unexpected chunk size {chunk_size}"
+                )))
+            }
             r => Err(unexpected(r)),
         }
     }
@@ -400,8 +414,15 @@ impl VfsClient {
         {
             return Ok(m.hashes.clone());
         }
-        let hashes = Arc::new(self.chunk_hashes(share, path).await?);
+        let (hashes, settled) = self.chunk_hashes_settled(share, path).await?;
+        let hashes = Arc::new(hashes);
         let mut memo = self.memo.lock();
+        if !settled {
+            // A rewrite within the same timestamp tick would keep (mtime, size): do not
+            // remember this list, ask again next time.
+            memo.remove(&key);
+            return Ok(hashes);
+        }
         if memo.len() >= HASH_MEMO_CAP {
             memo.clear();
         }

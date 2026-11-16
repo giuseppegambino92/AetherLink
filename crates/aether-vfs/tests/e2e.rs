@@ -184,6 +184,23 @@ async fn list_readdir_read_with_chunk_cache() {
     let got = c.read_cached(f.rw, "sub/big.bin", 0, 64).await.unwrap();
     assert_eq!(got, &changed[..64]);
 
+    // Same-size rewrite within one timestamp tick (FAT: 2 s granularity), simulated on any
+    // file system by restoring the previous mtime. The hash list of a just-written file is
+    // not remembered, so the new content is still seen.
+    let p = f.root.join("sub/big.bin");
+    let mtime = std::fs::metadata(&p).unwrap().modified().unwrap();
+    changed[20] ^= 0xFF;
+    std::fs::write(&p, &changed).unwrap();
+    std::fs::File::options()
+        .write(true)
+        .open(&p)
+        .unwrap()
+        .set_modified(mtime)
+        .unwrap();
+    assert_eq!(std::fs::metadata(&p).unwrap().modified().unwrap(), mtime);
+    let got = c.read_cached(f.rw, "sub/big.bin", 0, 64).await.unwrap();
+    assert_eq!(got, &changed[..64], "stale chunk served after a same-tick rewrite");
+
     // Host caps Read at 4 MiB.
     std::fs::write(f.root.join("huge.bin"), vec![7u8; 5 * 1024 * 1024]).unwrap();
     let (d, eof) = c.read(f.rw, "huge.bin", 0, 10 * 1024 * 1024).await.unwrap();
