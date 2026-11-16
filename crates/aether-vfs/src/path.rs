@@ -45,8 +45,14 @@ pub fn validate_name(c: &str) -> Result<(), String> {
         return Err("file name too long".into());
     }
     if cfg!(windows) {
-        if c.contains(['\\', ':', '<', '>', '"', '|', '?', '*']) {
+        if c.contains(['\\', ':', '<', '>', '"', '|', '?', '*']) || c.chars().any(char::is_control)
+        {
             return Err(format!("invalid character in file name: {c:?}"));
+        }
+        // Win32 strips trailing dots and spaces, so `a.txt.` would alias `a.txt` for every
+        // other program while the host (verbatim `\\?\` paths) creates a distinct file.
+        if c.ends_with(['.', ' ']) {
+            return Err(format!("file name ends with a dot or space: {c:?}"));
         }
         let stem = c
             .split('.')
@@ -54,9 +60,10 @@ pub fn validate_name(c: &str) -> Result<(), String> {
             .unwrap_or("")
             .trim_end()
             .to_ascii_uppercase();
-        const RESERVED: [&str; 22] = [
+        const RESERVED: [&str; 30] = [
             "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7",
             "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+            "COM¹", "COM²", "COM³", "LPT¹", "LPT²", "LPT³", "CONIN$", "CONOUT$",
         ];
         if RESERVED.contains(&stem.as_str()) {
             return Err(format!("reserved device name: {c:?}"));
@@ -105,6 +112,29 @@ pub(crate) fn symlink_target_is_contained(parent: &[&str], target: &str) -> Resu
 mod tests {
     use super::*;
 
+    #[cfg(windows)]
+    #[test]
+    fn windows_only_names() {
+        for bad in [
+            "a.txt.",
+            "a ",
+            "file:stream",
+            "con",
+            "Nul.txt",
+            "COM1.log",
+            "com\u{b9}",
+            "CONOUT$",
+            "tab\there",
+            "ctl\u{1}x",
+            "back\\slash",
+        ] {
+            assert!(validate_name(bad).is_err(), "{bad:?} must be refused");
+        }
+        for good in ["a.txt", ".hidden", "console", "COM10", "a b", "über.txt"] {
+            assert!(validate_name(good).is_ok(), "{good:?} must be accepted");
+        }
+    }
+
     #[test]
     fn accepts_normal_paths() {
         assert_eq!(split_rel_path("").unwrap(), Vec::<&str>::new());
@@ -115,8 +145,8 @@ mod tests {
         );
         assert_eq!(split_rel_path("dir/").unwrap(), vec!["dir"]);
         assert_eq!(
-            split_rel_path("..foo/bar..").unwrap(),
-            vec!["..foo", "bar.."]
+            split_rel_path("..foo/bar..baz").unwrap(),
+            vec!["..foo", "bar..baz"]
         );
     }
 

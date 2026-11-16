@@ -1,0 +1,83 @@
+name: Windows VFS sandbox
+
+# Runs the aether-vfs sandbox tests on real Windows (not Wine): junction / symlink escapes,
+# directory pinning against concurrent renames, long paths and Windows file-name rules, on
+# every file system a shared folder is likely to live on.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "crates/aether-vfs/**"
+      - "crates/aether-protocol/**"
+      - ".github/workflows/windows-vfs.yml"
+  pull_request:
+    paths:
+      - "crates/aether-vfs/**"
+      - "crates/aether-protocol/**"
+      - ".github/workflows/windows-vfs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vfs:
+    name: aether-vfs on ${{ matrix.fs }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # links: whether the file system supports reparse points; when it does, a link that
+        # cannot be created fails the run instead of skipping the test.
+        include:
+          - { fs: ntfs, links: true }
+          - { fs: refs, links: true }
+          - { fs: fat32, links: false }
+          - { fs: exfat, links: false }
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: vfs
+
+      - name: Mount a ${{ matrix.fs }} test volume
+        if: matrix.fs != 'ntfs'
+        shell: pwsh
+        run: |
+          $vhd = Join-Path $env:RUNNER_TEMP "${{ matrix.fs }}.vhdx"
+          $size = if ('${{ matrix.fs }}' -eq 'refs') { 4096 } else { 1024 }
+          @"
+          create vdisk file="$vhd" maximum=$size type=expandable
+          select vdisk file="$vhd"
+          attach vdisk
+          create partition primary
+          format fs=${{ matrix.fs }} quick label=AETHERTEST
+          assign letter=T
+          "@ | Set-Content -Encoding ascii "$env:RUNNER_TEMP\diskpart.txt"
+          diskpart /s "$env:RUNNER_TEMP\diskpart.txt"
+          if ($LASTEXITCODE -ne 0) { throw "diskpart failed" }
+          New-Item -ItemType Directory -Force T:\tmp | Out-Null
+          "TMP=T:\tmp" >> $env:GITHUB_ENV
+          "TEMP=T:\tmp" >> $env:GITHUB_ENV
+
+      - name: Show the file system under test
+        shell: pwsh
+        run: |
+          $tmp = [System.IO.Path]::GetTempPath()
+          "Temp dir: $tmp"
+          fsutil fsinfo volumeinfo ($tmp.Substring(0, 3))
+
+      - name: Require link tests
+        if: matrix.links
+        shell: pwsh
+        run: '"AETHERLINK_REQUIRE_LINK_TESTS=1" >> $env:GITHUB_ENV'
+
+      - name: Clippy
+        run: cargo clippy -p aether-vfs --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test -p aether-vfs -- --test-threads=1 --nocapture

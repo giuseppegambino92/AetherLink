@@ -361,19 +361,32 @@ Settings, shares and the trust store are written with `aether_net::write_private
 the same way, so the levels to restore survive a crash or power loss while the screen is dark.
 
 ### Shared folders and file transfer
-- **Path resolution without races (Unix and Windows).** `aether-vfs` resolves every request from a directory
+- **Path resolution without races (Unix).** `aether-vfs` resolves every request from a directory
   descriptor of the share root, one component at a time with `openat(O_NOFOLLOW | O_DIRECTORY)`, and
   performs the final operation relative to the resolved parent (`openat`, `mkdirat`, `unlinkat`,
   `renameat`, …). On Linux it uses `openat2(RESOLVE_BENEATH | RESOLVE_NO_MAGICLINKS)` when the kernel
   offers it. Swapping a directory for a symlink after the check cannot redirect an operation outside
-  the share; tests cover this race explicitly. On Windows, every directory between the share root
-  and the target is *pinned* for the duration of the operation: opened without following reparse
-  points, with `FILE_LIST_DIRECTORY` access and a share mode without `FILE_SHARE_DELETE`. While it is
-  held, no process can rename or delete that directory or replace it with a junction. A Windows test
-  reproduces this attack (it fails if a pinned directory can be moved mid-operation). Namespace
-  operations never follow a final link, and opened files are re-checked by handle
-  (`GetFinalPathNameByHandleW`). On both platforms links are followed only while they stay inside
-  the share.
+  the share; tests cover this race explicitly.
+- **Windows.** Every directory between the share root and the target, and every directory *above*
+  the root, is *pinned* for the duration of the operation. Pinning opens it without following
+  reparse points and with a share mode lacking `FILE_SHARE_DELETE`; it requests
+  `FILE_LIST_DIRECTORY`, or `FILE_TRAVERSE` for ancestors, because an open with attribute rights
+  only is ignored by share-access checks. While pinned, no process can rename or delete these
+  directories or replace them with a junction.
+  - Junctions and symlinks met on the way are followed only while they stay inside the share.
+    Absolute junction targets are compared with the root component by component, ASCII
+    case-insensitively, so `share-evil` is not "inside" `share`.
+  - Namespace operations never follow a final link: removing a junction removes the link, not the
+    target's contents. Opened files are re-checked by handle (`GetFinalPathNameByHandleW`); if that
+    fails, the operation is refused.
+  - File names that Windows would alias or treat specially are refused: trailing dots or spaces,
+    control characters, `:` (alternate data streams), and reserved device names including
+    `COM¹`–`COM³`, `LPT¹`–`LPT³`, `CONIN$` and `CONOUT$`.
+  - `.github/workflows/windows-vfs.yml` runs these tests on real Windows on NTFS, ReFS, FAT32 and
+    exFAT volumes. On NTFS and ReFS a link that cannot be created fails the run
+    (`AETHERLINK_REQUIRE_LINK_TESTS=1`) instead of skipping. Under Wine the junction, symlink and
+    long-path tests are skipped with an explicit `SKIPPED` line, because Wine supports none of them
+    faithfully.
 - **Arithmetic.** Offer totals use `try_fold` + `checked_add`, and chunk bounds use `checked_add`, so
   hostile sizes and offsets are rejected instead of wrapping.
 - **Staging.** An incoming transfer is written into a private (`0700`) staging directory with a random
