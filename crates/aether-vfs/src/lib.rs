@@ -19,15 +19,20 @@
 //! ## Security model
 //!
 //! The host treats every request as hostile. Paths must be relative, `/`-separated,
-//! must not contain `..`, NUL bytes or Windows drive/UNC prefixes. Every path is
-//! resolved with symlinks followed (`canonicalize`) and refused if it ends up outside
-//! the share root; for operations that create or rename entries the *parent* directory
-//! is canonicalized and checked. Namespace-changing operations (create, mkdir, remove,
-//! rename, symlink) are serialized per share so a peer cannot race its own requests
-//! (e.g. swap a directory for a symlink between check and use); final opens use
-//! `O_NOFOLLOW` on Unix. Symlinks created through the VFS must have relative targets
-//! that stay inside the share.
+//! must not contain `..`, NUL bytes or Windows drive/UNC prefixes.
+//!
+//! On Unix every operation resolves from a descriptor of the share root, one component at a
+//! time with `O_NOFOLLOW`, and then acts relative to the resolved parent descriptor
+//! (`openat2(RESOLVE_BENEATH)` on Linux when available). Symlinks are followed only while
+//! they stay beneath the root (absolute targets are refused), and a directory swapped for a
+//! symlink by another local process between resolution and use cannot redirect the
+//! operation (see `beneath`). On other platforms paths are canonicalized and checked
+//! against the root, and every opened file is re-checked by handle. Namespace-changing
+//! operations are also serialized per share so a peer cannot race its own requests.
+//! Symlinks created through the VFS must have relative targets that stay inside the share.
 
+#[cfg(unix)]
+mod beneath;
 mod cache;
 mod client;
 mod error;

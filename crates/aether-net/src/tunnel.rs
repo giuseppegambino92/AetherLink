@@ -21,23 +21,23 @@ const OPEN_TIMEOUT: Duration = Duration::from_secs(10);
 pub struct TunnelPolicy {
     /// Master switch; `false` (the default) refuses every tunnel.
     pub enabled: bool,
-    /// Ports that may be tunneled; empty = any loopback port.
-    pub allowed_ports: Vec<u16>,
+    /// Ports that may be tunneled; `None` = any loopback port, `Some(empty)` = none.
+    pub allowed_ports: Option<Vec<u16>>,
 }
 
 impl TunnelPolicy {
     /// Allow any loopback port.
     pub fn allow_all() -> Self {
-        Self { enabled: true, allowed_ports: Vec::new() }
+        Self { enabled: true, allowed_ports: None }
     }
 
-    /// Allow only `ports`.
+    /// Allow only `ports` (an empty list allows nothing).
     pub fn only(ports: impl Into<Vec<u16>>) -> Self {
-        Self { enabled: true, allowed_ports: ports.into() }
+        Self { enabled: true, allowed_ports: Some(ports.into()) }
     }
 
     pub fn allows(&self, port: u16) -> bool {
-        self.enabled && port != 0 && (self.allowed_ports.is_empty() || self.allowed_ports.contains(&port))
+        self.enabled && port != 0 && self.allowed_ports.as_ref().is_none_or(|p| p.contains(&port))
     }
 }
 
@@ -321,6 +321,7 @@ mod tests {
         assert!(!TunnelPolicy::default().allows(22));
         assert!(TunnelPolicy::allow_all().allows(5432));
         assert!(!TunnelPolicy::allow_all().allows(0));
+        assert!(!TunnelPolicy::only(Vec::<u16>::new()).allows(22), "an empty allowlist allows nothing");
         let p = TunnelPolicy::only([3000, 5173]);
         assert!(p.allows(3000) && !p.allows(22));
     }

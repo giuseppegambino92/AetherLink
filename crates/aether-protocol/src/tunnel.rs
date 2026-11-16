@@ -32,7 +32,7 @@ pub enum PortTunnelOpen {
 pub enum PortTunnelMessage {
     ScanRequest,
     ScanResult { ports: Vec<ListeningPort> },
-    /// Host-side policy: which ports may be tunneled (empty = any loopback port).
+    /// Host-side policy: exactly which ports may be tunneled (empty = none).
     Policy { allowed_ports: Vec<u16> },
 }
 

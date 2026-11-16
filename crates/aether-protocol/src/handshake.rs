@@ -90,4 +90,7 @@ pub enum AuthRejectReason {
     TooManyAttempts,
     VersionMismatch,
     HostBusy,
+    /// The host requires local owner verification (Touch ID / Windows Hello / password) for
+    /// trusted devices, and it failed, timed out or is unavailable (fail-closed).
+    OwnerVerificationFailed,
 }

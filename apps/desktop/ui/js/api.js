@@ -174,6 +174,7 @@ export const api = {
   getSettings: () => call('get_settings'),
   setSettings: (settings) => call('set_settings', { settings }),
   getPermissions: () => call('get_permissions'),
+  ownerVerificationAvailable: () => call('owner_verification_available'),
   openPermissionSettings: (kind) => call('open_permission_settings', { kind }),
 
   // discovery / trust

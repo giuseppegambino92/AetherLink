@@ -23,6 +23,8 @@ pub mod names {
     pub const SESSION_STATE: &str = "session-state";
     pub const SESSION_TELEMETRY: &str = "session-telemetry";
     pub const SESSION_DISPLAYS: &str = "session-displays";
+    /// `{sessionId, permissions}`: what the host lets this session do (HUD greys out the rest).
+    pub const SESSION_PERMISSIONS: &str = "session-permissions";
     pub const DOM_UPDATED: &str = "dom-updated";
     pub const TRANSFER_PROGRESS: &str = "transfer-progress";
     pub const INCOMING_REQUEST: &str = "incoming-request";

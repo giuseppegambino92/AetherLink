@@ -36,7 +36,7 @@ pub use connection::{IncomingStream, PathStats, PeerConnection};
 pub use endpoint::{AetherEndpoint, IncomingConnection, Session};
 pub use error::{NetError, Result};
 pub use framed::{FramedRecv, FramedSend};
-pub use identity::{Identity, TrustStore, TrustedPeer};
+pub use identity::{Identity, TrustStore, TrustedPeer, write_private_file};
 
 /// Re-exported so callers can build `HostAuthPolicy::consent` futures without depending on `futures`.
 pub use futures::future::BoxFuture;

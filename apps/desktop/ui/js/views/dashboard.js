@@ -10,7 +10,7 @@ import { devicesGrid } from '../components/devices-grid.js';
 import { hostSessionsCard } from '../components/host-sessions.js';
 import { hidControllerSection } from '../components/hid-controller.js';
 import { mountsCard, localSharesCard } from '../components/drives-manager.js';
-import { permissionsCard, preferencesCard, hotkeysCard } from '../components/settings-panel.js';
+import { permissionsCard, preferencesCard, sessionAccessCard, hotkeysCard } from '../components/settings-panel.js';
 import { showConsentSheet, dismissConsent } from '../components/consent-sheet.js';
 import { openPalette } from '../components/palette.js';
 import { hostStore, trayStore } from '../stores.js';
@@ -120,7 +120,7 @@ export function mountDashboard(root) {
       return [header('hid.title', 'hid.subtitle'), track(hidControllerSection())];
     },
     settings() {
-      return [header('settings.title', 'settings.subtitle'), h('div', { class: 'grid' }, track(permissionsCard()), track(preferencesCard()), track(hotkeysCard()))];
+      return [header('settings.title', 'settings.subtitle'), h('div', { class: 'grid' }, track(permissionsCard()), track(preferencesCard()), track(sessionAccessCard()), track(hotkeysCard()))];
     },
   };
 

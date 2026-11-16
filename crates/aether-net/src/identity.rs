@@ -153,7 +153,9 @@ fn store_file(path: &Path, id: &Identity) -> Result<()> {
 }
 
 /// Atomically write `data` to `path` with owner-only permissions (0600; dir 0700 when created).
-pub(crate) fn write_private_file(path: &Path, data: &[u8]) -> Result<()> {
+/// Durable, atomic, owner-only write: temp file (0600) → `fsync` → rename → `fsync` of the
+/// directory, so a crash leaves either the old or the new content, never a torn or lost file.
+pub fn write_private_file(path: &Path, data: &[u8]) -> Result<()> {
     if let Some(dir) = path.parent()
         && !dir.as_os_str().is_empty()
         && !dir.exists()
@@ -183,6 +185,12 @@ pub(crate) fn write_private_file(path: &Path, data: &[u8]) -> Result<()> {
         f.sync_all()?;
     }
     fs::rename(&tmp, path)?;
+    // Persist the rename itself (directory entry). Not possible on Windows, where
+    // MoveFileEx(REPLACE_EXISTING) is already durable enough for NTFS metadata journaling.
+    #[cfg(unix)]
+    if let Some(dir) = path.parent().filter(|d| !d.as_os_str().is_empty()) {
+        fs::File::open(dir)?.sync_all()?;
+    }
     Ok(())
 }
 

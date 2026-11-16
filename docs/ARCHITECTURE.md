@@ -307,3 +307,71 @@ permissions (never requested), a 1 s capture probe (only if already permitted), 
 host+client session (real screen when permitted, test pattern otherwise), Ghost Mode for 1 s with exact
 backlight-restore verification, the audio loopback chain, and optionally a temporary virtual display.
 Exit code 0 when every executed check passed.
+
+## Security hardening (authorization, resources, durability)
+
+Authentication (TLS 1.3 + SPAKE2 / pinned keys) says *who* is connected; these rules decide *what*
+that session may do.
+
+### Session permissions (least privilege)
+`aether_protocol::SessionPermissions` lists every capability beyond viewing the screen: `input`,
+`clipboard`, `file_transfer`, `drives`, `semantic_ui`, `audio`, `virtual_display`, `ghost_mode`,
+`terminal`, `port_forwarding`, `usb`. The host keeps the policy in `Settings::permissions`
+(defaults: remote assistance on; terminal, port forwarding, USB and Ghost Mode **off**) and enforces
+it in `aether_core::host`:
+
+* After `SessionReady` the host sends `ControlMessage::Permissions`; the client re-emits it as the
+  `session-permissions` event and the HUD disables what is not granted.
+* Every service stream (`Input`, `FileTransfer`, `Vfs`, `Clipboard`, `Dom`, `PortControl`,
+  `PortTunnel`, `Terminal`, `Usb`) and every control request (`SetGhostMode`, `SetVirtualDisplay`,
+  `SetClipboardMode`, `SetAudio`) and input datagram is checked; refusals answer
+  `Error { code: "errors.permission.<capability>" }`. `semantic_ui` also requires `input`.
+* Changes apply live: `Engine::set_settings` publishes them on a `watch` channel; running services
+  that lose their permission are dropped (closing their streams), audio/clipboard/Ghost Mode are
+  switched off, and the controller receives the new `Permissions`.
+* Port forwarding uses an explicit allowlist (`tunnel_allowed_ports`; empty = no port). Port scans
+  only advertise allowlisted ports.
+
+### Owner verification for trusted devices
+`HostAuthPolicy::verify_trusted` runs after a pinned key is recognised. With
+`Settings::require_biometric` the host asks the person at the computer (`aether_core::local_auth`:
+LocalAuthentication `DeviceOwnerAuthentication` on macOS, Windows Hello `UserConsentVerifier` on
+Windows). It fails closed: errors, a 90 s timeout, a prompt already open for another peer, or a
+platform without support all reject with `AuthRejectReason::OwnerVerificationFailed`, and the
+password path is not offered as a fallback. The option cannot be enabled where verification is
+unavailable (`errors.ownerVerificationUnavailable`).
+
+### Resource limits
+Per session, `StreamLimits` caps concurrently running services (96 in total; e.g. 4 terminals,
+64 tunnels, 8 VFS streams, 4 USB, 4 incoming transfers); excess streams are refused with
+`errors.tooManyStreams`. The terminal output path is a bounded channel (32 chunks of ≤ 16 KiB): when
+the network is slower than the shell, the PTY reader blocks, the PTY buffer fills and the shell is
+paused instead of output accumulating in memory.
+
+### Ghost Mode state
+`Engine::set_ghost_mode` returns a `GhostOutcome { requested, native_active, fallback_active,
+effective }`. The app shell installs its webview curtain with `Engine::set_ghost_fallback`, which
+reports whether every monitor was covered. Ghost Mode is only recorded as on (and shown as on) when a
+curtain is really up; otherwise the controller gets `errors.ghostUnavailable` and its HUD button
+resets.
+
+### Durable state
+Settings, shares and the trust store are written with `aether_net::write_private_file`: owner-only
+(0600) temp file, `fsync`, rename, directory `fsync`. The Ghost Mode backlight restore file is written
+the same way, so the levels to restore survive a crash or power loss while the screen is dark.
+
+### Shared folders and file transfer
+- **Path resolution without races (Unix).** `aether-vfs` resolves every request from a directory
+  descriptor of the share root, one component at a time with `openat(O_NOFOLLOW | O_DIRECTORY)`, and
+  performs the final operation relative to the resolved parent (`openat`, `mkdirat`, `unlinkat`,
+  `renameat`, …). On Linux it uses `openat2(RESOLVE_BENEATH | RESOLVE_NO_MAGICLINKS)` when the kernel
+  offers it. Swapping a directory for a symlink after the check cannot redirect an operation outside
+  the share; tests cover this race explicitly. On Windows, opened files are re-checked by handle
+  (`GetFinalPathNameByHandleW`). Namespace operations there still act on canonical paths, a residual
+  risk documented in the code.
+- **Arithmetic.** Offer totals use `try_fold` + `checked_add`, and chunk bounds use `checked_add`, so
+  hostile sizes and offsets are rejected instead of wrapping.
+- **Staging.** An incoming transfer is written into a private (`0700`) staging directory with a random
+  128-bit name inside the destination. Files are created with `create_new`, never truncating an
+  existing file. Only a complete, verified transfer is published with a no-replace rename. On error
+  or cancel the staging directory is removed and the destination is left untouched.

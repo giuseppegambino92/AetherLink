@@ -77,7 +77,9 @@
 
 ### Sicurezza
 - Identità del dispositivo Ed25519, ID a 9 cifre, password monouso a rotazione, **SPAKE2 legato a TLS 1.3**
-  e dispositivi attendibili riconosciuti dalla chiave. Il relay, ospitabile in proprio, è
+  e dispositivi attendibili riconosciuti dalla chiave, con conferma facoltativa tramite Touch ID / Windows Hello.
+- **Permessi per sessione:** la visione è sempre consentita; controllo, file, terminale, tunnel, USB e
+  modalità Ghost sono interruttori separati (quelli più delicati partono spenti). Il relay, ospitabile in proprio, è
   **zero-knowledge**: inoltra pacchetti cifrati e non vede mai i contenuti.
 
 ## Screenshot
@@ -203,6 +205,16 @@ relay né un attaccante in mezzo possono scoprire la password o dirottare la ses
 password errati sono limitati per origine e globalmente. Il buffer del DVR è cifrato con una chiave di
 sessione tenuta solo in memoria e mai salvata. La modalità Ghost salva i livelli di retroilluminazione
 prima di oscurare, così un crash viene annullato al successivo avvio.
+
+Essere connessi non significa poter fare tutto. Una sessione può sempre vedere lo schermo; tutto il resto è
+un permesso separato, scelto in **Impostazioni → Accesso** e applicato dall'host: tastiera e mouse, appunti,
+file, unità, azioni ⌘K, audio e schermi virtuali sono attivi per impostazione predefinita, mentre terminale
+remoto, inoltro delle porte (solo verso un elenco esplicito di porte), redirezione USB e modalità Ghost
+restano spenti finché non li attivi. Le modifiche valgono subito, anche per le sessioni già aperte. In più,
+volendo, anche i dispositivi attendibili entrano solo dopo che chi è davanti al computer conferma con
+Touch ID, Windows Hello o la password dell'account; se nessuno conferma, la connessione viene rifiutata.
+Ogni sessione ha un limite di shell, tunnel e trasferimenti aperti, e il terminale remoto rallenta la shell
+invece di accumulare output senza limiti.
 
 ## Limiti noti
 

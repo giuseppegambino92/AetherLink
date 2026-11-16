@@ -62,6 +62,12 @@ pub trait HostAuthPolicy: Send + Sync + 'static {
     fn password(&self) -> Option<String>;
     /// Interactive consent; may await a UI prompt.
     fn consent(&self, peer: &Hello) -> BoxFuture<'static, bool>;
+    /// Extra local check before a *trusted* peer is admitted (e.g. Touch ID / Windows Hello of
+    /// the person at the host). Must fail closed: `false` on error, timeout or unavailability.
+    /// The default admits trusted peers without a local check.
+    fn verify_trusted(&self, _peer: &Hello) -> BoxFuture<'static, bool> {
+        Box::pin(async { true })
+    }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -279,7 +285,8 @@ async fn client_handshake_inner(
             .await
             .map_err(|_| NetError::Timeout("authentication"))??;
         match msg {
-            AuthMessage::Required { method: AuthMethod::TrustedKey } => {}
+            // The host may verify its local owner (Touch ID / Windows Hello) before admitting us.
+            AuthMessage::Required { method: AuthMethod::TrustedKey } => consent_wait = true,
             AuthMessage::Required { method: AuthMethod::InteractiveConsent } => consent_wait = true,
             AuthMessage::Required { method: AuthMethod::Password } => {
                 let ClientAuth::Password(pw) = &auth else {
@@ -410,7 +417,12 @@ async fn host_handshake_inner(
     tx.send(&AuthMessage::Required { method }).await?;
 
     match method {
-        AuthMethod::TrustedKey => {}
+        AuthMethod::TrustedKey => {
+            let verified = tokio::time::timeout(CONSENT_TIMEOUT, policy.verify_trusted(&remote)).await.unwrap_or(false);
+            if !verified {
+                return Err(reject(conn, &mut tx, AuthRejectReason::OwnerVerificationFailed).await);
+            }
+        }
         AuthMethod::InteractiveConsent => {
             let accepted = tokio::time::timeout(CONSENT_TIMEOUT, policy.consent(&remote)).await.unwrap_or(false);
             if !accepted {

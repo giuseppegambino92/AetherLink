@@ -77,7 +77,24 @@
     "audioPermission": "Il computer remoto non ha ancora consentito la cattura dell’audio. Su un Mac, chiedi al proprietario di abilitare AetherLink in Impostazioni di Sistema → Privacy e sicurezza → Registrazione schermo e audio di sistema.",
     "audioOutputUnavailable": "Su questo computer non è disponibile alcun dispositivo di uscita audio.",
     "audioOutputNotFound": "Quel dispositivo di uscita audio non è più disponibile.",
-    "hidNotStarted": "Avvia prima il controllo dell'iPhone."
+    "hidNotStarted": "Avvia prima il controllo dell'iPhone.",
+    "permission": {
+      "input": "L'altro computer non consente il controllo di tastiera e mouse in questa sessione.",
+      "clipboard": "L'altro computer non consente la condivisione degli appunti in questa sessione.",
+      "fileTransfer": "L'altro computer non accetta file in questa sessione.",
+      "drives": "L'altro computer non consente l'accesso alle sue unità in questa sessione.",
+      "semanticUi": "L'altro computer non consente le azioni ⌘K in questa sessione.",
+      "audio": "L'altro computer non condivide il suo audio in questa sessione.",
+      "terminal": "L'altro computer non consente il terminale remoto. Il proprietario può attivarlo in Impostazioni → Accesso.",
+      "portForwarding": "L'altro computer non consente l'inoltro delle porte. Il proprietario può attivarlo in Impostazioni → Accesso.",
+      "usb": "L'altro computer non consente la redirezione USB.",
+      "ghostMode": "L'altro computer non consente la modalità Ghost. Il proprietario può attivarla in Impostazioni → Accesso.",
+      "virtualDisplay": "L'altro computer non consente gli schermi virtuali in questa sessione."
+    },
+    "ghostUnavailable": "La modalità Ghost non è riuscita a nascondere lo schermo dell'altro computer, quindi resta disattivata.",
+    "tooManyStreams": "In questa sessione ci sono troppi strumenti aperti. Chiudine qualcuno e riprova.",
+    "ownerVerificationFailed": "Il proprietario dell'altro computer non ha confermato la connessione (Touch ID / Windows Hello).",
+    "ownerVerificationUnavailable": "Su questo computer non sono disponibili Touch ID, Windows Hello o una password di accesso: l'opzione non si può attivare."
   },
   "os": {
     "macos": "macOS",
@@ -282,6 +299,69 @@
       "palette": "Ricerca semantica durante una sessione",
       "terminal": "Terminale remoto",
       "quickConnect": "Connessione rapida dalla dashboard"
+    },
+    "access": {
+      "title": "Accesso",
+      "subtitle": "Cosa possono fare su questo computer i dispositivi connessi",
+      "viewAlways": "I dispositivi connessi possono sempre vedere lo schermo. Tutto il resto lo decidi tu, e le modifiche valgono subito, anche per le sessioni già aperte.",
+      "sensitive": "Sensibile",
+      "owner": {
+        "title": "Conferma i dispositivi attendibili con Touch ID",
+        "body": "Anche i dispositivi attendibili si connettono solo dopo che hai confermato qui con Touch ID, Windows Hello o la password. Se nessuno conferma, la connessione viene rifiutata.",
+        "unavailable": "Non disponibile su questo computer: servono Touch ID, Windows Hello o una password di accesso."
+      },
+      "ports": {
+        "title": "Porte consentite",
+        "body": "Si possono raggiungere solo queste porte. Lascia vuoto per non consentirne nessuna.",
+        "placeholder": "es. 3000, 5432",
+        "invalid": "Inserisci numeri di porta da 1 a 65535, separati da virgole."
+      },
+      "perm": {
+        "input": {
+          "title": "Controllare tastiera e mouse",
+          "body": "Scrivere, fare clic e scorrere su questo computer."
+        },
+        "clipboard": {
+          "title": "Condividere gli appunti",
+          "body": "Copiare e incollare tra i due computer."
+        },
+        "fileTransfer": {
+          "title": "Ricevere file",
+          "body": "I file trascinati sulla finestra di sessione vengono salvati in Download."
+        },
+        "drives": {
+          "title": "Aprire le cartelle condivise",
+          "body": "Montare le cartelle che condividi in Unità virtuali."
+        },
+        "semanticUi": {
+          "title": "Azioni ⌘K",
+          "body": "Trovare e premere pulsanti, menu e campi per nome. Richiede il controllo di tastiera e mouse."
+        },
+        "audio": {
+          "title": "Sentire l'audio di questo computer",
+          "body": "Trasmettere l'audio di sistema all'altro dispositivo."
+        },
+        "virtualDisplay": {
+          "title": "Aggiungere schermi virtuali",
+          "body": "Creare uno schermo in più temporaneo per la sessione."
+        },
+        "ghostMode": {
+          "title": "Modalità Ghost",
+          "body": "Oscurare lo schermo di questo computer mentre qualcuno ci lavora da remoto."
+        },
+        "terminal": {
+          "title": "Terminale remoto",
+          "body": "Aprire una shell su questo computer con i permessi del tuo utente."
+        },
+        "portForwarding": {
+          "title": "Inoltro delle porte",
+          "body": "Raggiungere i servizi attivi su questo computer, solo sulle porte indicate sotto."
+        },
+        "usb": {
+          "title": "Redirezione USB",
+          "body": "Usare i dispositivi USB collegati a questo computer."
+        }
+      }
     }
   },
   "consent": {

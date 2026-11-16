@@ -86,6 +86,7 @@ dependencies = [
  "arboard",
  "base64 0.22.1",
  "blake3",
+ "block2",
  "cpal",
  "dirs 6.0.0",
  "futures",

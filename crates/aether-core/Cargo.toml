@@ -50,6 +50,7 @@ tempfile.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
+block2 = "0.6"
 objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSPasteboard"] }
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSArray", "NSData", "NSDictionary", "NSString", "NSError"] }
 objc2-vision = { version = "0.3", default-features = false, features = ["std", "VNRecognizeTextRequest", "VNRequest", "VNRequestHandler", "VNObservation", "VNTypes", "VNGeometry", "objc2-core-foundation", "objc2-image-io"] }
@@ -62,6 +63,7 @@ windows = { version = "0.62", features = [
     "Globalization",
     "Graphics_Imaging",
     "Media_Ocr",
+    "Security_Credentials_UI",
     "Storage_Streams",
 ] }
 

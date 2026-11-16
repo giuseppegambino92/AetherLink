@@ -12,11 +12,15 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
+#[derive(Default)]
 struct TestPolicy {
     trusted: Vec<[u8; 32]>,
     password: Option<String>,
     consent: bool,
+    /// Outcome of the local owner check for trusted peers (`None` = default hook).
+    owner_ok: Option<bool>,
 }
+
 
 impl HostAuthPolicy for TestPolicy {
     fn is_trusted(&self, peer: &Hello) -> bool {
@@ -28,6 +32,10 @@ impl HostAuthPolicy for TestPolicy {
     fn consent(&self, _peer: &Hello) -> BoxFuture<'static, bool> {
         let c = self.consent;
         Box::pin(async move { c })
+    }
+    fn verify_trusted(&self, _peer: &Hello) -> BoxFuture<'static, bool> {
+        let ok = self.owner_ok.unwrap_or(true);
+        Box::pin(async move { ok })
     }
 }
 
@@ -69,7 +77,7 @@ async fn pair_on(
 async fn connected_pair() -> (Session, Session, AetherEndpoint, AetherEndpoint) {
     let host = endpoint();
     let client = endpoint();
-    let policy = TestPolicy { trusted: vec![client.identity().public_key()], password: None, consent: false };
+    let policy = TestPolicy { trusted: vec![client.identity().public_key()], password: None, consent: false, ..TestPolicy::default() };
     let (c, h) = pair_on(&host, &client, policy, ClientAuth::Trusted).await;
     (c.unwrap(), h.unwrap(), host, client)
 }
@@ -99,7 +107,7 @@ async fn trusted_key_auth_and_control_stream() {
 async fn password_auth_success() {
     let host = endpoint();
     let client = endpoint();
-    let policy = TestPolicy { trusted: vec![], password: Some("482913".into()), consent: false };
+    let policy = TestPolicy { trusted: vec![], password: Some("482913".into()), consent: false, ..TestPolicy::default() };
     let (c, h) = pair_on(&host, &client, policy, ClientAuth::Password("482913".into())).await;
     let (c, h) = (c.unwrap(), h.unwrap());
     assert_eq!(c.conn.peer_public_key(), host.identity().public_key());
@@ -111,7 +119,7 @@ async fn wrong_password_rejected_then_rate_limited() {
     let host = endpoint();
     for attempt in 0..5 {
         let client = endpoint();
-        let policy = TestPolicy { trusted: vec![], password: Some("482913".into()), consent: false };
+        let policy = TestPolicy { trusted: vec![], password: Some("482913".into()), consent: false, ..TestPolicy::default() };
         let (c, h) = pair_on(&host, &client, policy, ClientAuth::Password("000000".into())).await;
         assert!(
             matches!(c, Err(NetError::AuthRejected(AuthRejectReason::WrongPassword))),
@@ -121,7 +129,7 @@ async fn wrong_password_rejected_then_rate_limited() {
     }
     // Now even the right password is refused from this source.
     let client = endpoint();
-    let policy = TestPolicy { trusted: vec![], password: Some("482913".into()), consent: false };
+    let policy = TestPolicy { trusted: vec![], password: Some("482913".into()), consent: false, ..TestPolicy::default() };
     let (c, _h) = pair_on(&host, &client, policy, ClientAuth::Password("482913".into())).await;
     assert!(matches!(c, Err(NetError::AuthRejected(AuthRejectReason::TooManyAttempts))), "{c:?}");
 }
@@ -130,7 +138,7 @@ async fn wrong_password_rejected_then_rate_limited() {
 async fn password_required_but_client_has_none() {
     let host = endpoint();
     let client = endpoint();
-    let policy = TestPolicy { trusted: vec![], password: Some("1".into()), consent: true };
+    let policy = TestPolicy { trusted: vec![], password: Some("1".into()), consent: true, ..TestPolicy::default() };
     let (c, h) = pair_on(&host, &client, policy, ClientAuth::Trusted).await;
     assert!(matches!(c, Err(NetError::Auth(_))), "{c:?}");
     assert!(h.is_err());
@@ -141,12 +149,12 @@ async fn interactive_consent() {
     let host = endpoint();
     let client = endpoint();
     let (c, h) =
-        pair_on(&host, &client, TestPolicy { trusted: vec![], password: None, consent: true }, ClientAuth::Trusted).await;
+        pair_on(&host, &client, TestPolicy { trusted: vec![], password: None, consent: true, ..TestPolicy::default() }, ClientAuth::Trusted).await;
     assert!(c.is_ok() && h.is_ok());
 
     let client = endpoint();
     let (c, _) =
-        pair_on(&host, &client, TestPolicy { trusted: vec![], password: None, consent: false }, ClientAuth::Trusted).await;
+        pair_on(&host, &client, TestPolicy { trusted: vec![], password: None, consent: false, ..TestPolicy::default() }, ClientAuth::Trusted).await;
     assert!(matches!(c, Err(NetError::AuthRejected(AuthRejectReason::DeniedByUser))), "{c:?}");
 }
 
@@ -155,7 +163,7 @@ async fn pinned_host_key_mismatch_is_rejected() {
     let host = endpoint();
     let client = endpoint();
     let h = host.clone();
-    let policy = Arc::new(TestPolicy { trusted: vec![client.identity().public_key()], password: None, consent: false });
+    let policy = Arc::new(TestPolicy { trusted: vec![client.identity().public_key()], password: None, consent: false, ..TestPolicy::default() });
     let host_hello = hello(host.identity(), "host");
     tokio::spawn(async move {
         let _ = h.accept(host_hello, policy).await;
@@ -304,4 +312,24 @@ async fn port_forwarding_end_to_end() {
     tunnel.stop();
     tokio::time::sleep(Duration::from_millis(50)).await;
     assert!(tokio::net::TcpStream::connect(tunnel.local_addr()).await.is_err(), "listener closed after stop()");
+}
+
+#[tokio::test]
+async fn trusted_key_requires_local_owner_verification_when_policy_says_so() {
+    let host = endpoint();
+    let client = endpoint();
+    let key = client.identity().public_key();
+    let ok = TestPolicy { trusted: vec![key], owner_ok: Some(true), ..TestPolicy::default() };
+    let (c, h) = pair_on(&host, &client, ok, ClientAuth::Trusted).await;
+    assert!(c.is_ok() && h.is_ok(), "{c:?}");
+
+    // Fail closed: a failed / unavailable owner check rejects even a pinned key, and the
+    // password fallback is not offered.
+    let client = endpoint();
+    let key = client.identity().public_key();
+    let denied =
+        TestPolicy { trusted: vec![key], password: Some("482913".into()), owner_ok: Some(false), ..TestPolicy::default() };
+    let (c, h) = pair_on(&host, &client, denied, ClientAuth::Password("482913".into())).await;
+    assert!(matches!(c, Err(NetError::AuthRejected(AuthRejectReason::OwnerVerificationFailed))), "{c:?}");
+    assert!(h.is_err());
 }

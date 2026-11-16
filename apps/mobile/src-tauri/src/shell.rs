@@ -88,9 +88,11 @@ pub fn set_hud_hotkey(_app: &AppHandle, _state: &UiState, _accelerator: &str) ->
 }
 
 /// Ghost Mode's privacy curtain is a desktop overlay window; a phone host cannot draw
-/// above other apps without `SYSTEM_ALERT_WINDOW`, so the request is only logged.
-pub fn set_privacy_curtain(_app: &AppHandle, enabled: bool) {
+/// above other apps without `SYSTEM_ALERT_WINDOW`. Returns whether the requested state holds:
+/// removing trivially succeeds, raising never does (so the engine reports Ghost Mode as off).
+pub fn set_privacy_curtain(_app: &AppHandle, enabled: bool) -> bool {
     tracing::info!(enabled, "ghost mode requested (no privacy curtain on mobile)");
+    !enabled
 }
 
 /// Desktop registers Ctrl+Opt+Cmd+Esc to lift Ghost Mode; phones have no global hotkeys

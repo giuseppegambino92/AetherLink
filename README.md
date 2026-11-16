@@ -71,7 +71,9 @@
 
 ### Security
 - Ed25519 device identity, a 9-digit ID, a rotating one-time password, **SPAKE2 bound to TLS 1.3**, and
-  trusted devices pinned by key. The self-hostable relay is **zero-knowledge**: it forwards encrypted
+  trusted devices pinned by key, optionally confirmed with Touch ID / Windows Hello.
+- **Per-session permissions:** viewing is always allowed; control, files, terminal, tunnels, USB and
+  Ghost Mode are separate switches (the risky ones start off). The self-hostable relay is **zero-knowledge**: it forwards encrypted
   packets and never sees content.
 
 ## Screenshots
@@ -195,6 +197,16 @@ with the rotating one-time password, bound to the TLS exporter, so a relay or a 
 learn the password nor splice the session. Failed password attempts are rate-limited per source and
 globally. The DVR buffer is encrypted with a per-session in-memory key that is never persisted. Ghost Mode
 saves backlight levels before dimming, so a crash is undone at the next launch.
+
+Being connected is not the same as being allowed. A session can always see the screen; everything else
+is a separate permission chosen in **Settings → Access** and enforced by the host: keyboard and mouse,
+clipboard, files, drives, ⌘K actions, audio and virtual displays are on by default, while the remote
+terminal, port forwarding (only to an explicit list of ports), USB redirection and Ghost Mode are off
+until you enable them. Changes apply immediately, also to sessions already open. Optionally, even
+trusted devices get in only after the person at the computer confirms with Touch ID, Windows Hello or
+the account password; if nobody confirms, the connection is refused. Each session has caps on open
+shells, tunnels and file streams, and the remote terminal slows the shell down instead of buffering
+unlimited output.
 
 ## Known limitations
 

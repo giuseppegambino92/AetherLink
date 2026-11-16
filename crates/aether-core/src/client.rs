@@ -186,6 +186,9 @@ impl ClientSession {
                     let audio = self.audio.is_enabled().then(|| self.audio.stats());
                     self.emit(names::SESSION_TELEMETRY, &serde_json::json!({ "sessionId": self.id, "telemetry": t, "audio": audio }));
                 }
+                ControlMessage::Permissions(p) => {
+                    self.emit(names::SESSION_PERMISSIONS, &serde_json::json!({ "sessionId": self.id, "permissions": p }));
+                }
                 ControlMessage::Error { code, detail } => {
                     self.emit(
                         names::SESSION_STATE,

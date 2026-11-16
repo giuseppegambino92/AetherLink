@@ -256,3 +256,194 @@ async fn sender_cancel_sends_cancel_message() {
     assert!(matches!(sender.await.unwrap(), Err(VfsError::Cancelled(_))));
     assert!(leftovers(dst.path()).is_empty());
 }
+
+#[tokio::test]
+async fn overflowing_offers_and_chunks_are_rejected() {
+    // Entry sizes whose sum overflows u64 (and a total that matches the wrapped sum).
+    let (r, dst) = receive_raw(vec![TransferMessage::Offer {
+        transfer_id: 1,
+        entries: vec![file_entry("a", u64::MAX), file_entry("b", 2)],
+        total_bytes: 1,
+        drop_target: None,
+    }])
+    .await;
+    assert!(matches!(r, Err(VfsError::Protocol(_))), "{r:?}");
+    assert_eq!(std::fs::read_dir(dst.path()).unwrap().count(), 0);
+    // A chunk with a hostile offset.
+    let (r, dst) = receive_raw(vec![
+        TransferMessage::Offer {
+            transfer_id: 1,
+            entries: vec![file_entry("f", 4)],
+            total_bytes: 4,
+            drop_target: None,
+        },
+        TransferMessage::Chunk {
+            entry: 0,
+            offset: u64::MAX,
+            data: vec![0; 4],
+        },
+    ])
+    .await;
+    assert!(matches!(r, Err(VfsError::Protocol(_))), "{r:?}");
+    assert_eq!(std::fs::read_dir(dst.path()).unwrap().count(), 0);
+}
+
+fn file_msgs(data: &[u8]) -> Vec<TransferMessage> {
+    vec![
+        TransferMessage::Chunk {
+            entry: 0,
+            offset: 0,
+            data: data.to_vec(),
+        },
+        TransferMessage::EntryDone {
+            entry: 0,
+            blake3: *blake3::hash(data).as_bytes(),
+        },
+    ]
+}
+
+#[tokio::test]
+async fn concurrent_transfers_with_the_same_id_do_not_collide() {
+    let dst = tempfile::tempdir().unwrap();
+    // A file named like an old-style temp file must never be truncated.
+    std::fs::write(dst.path().join(".f.txt.aetherpart-7-0"), b"keep me").unwrap();
+    let run = |data: &'static [u8]| {
+        let d = dst.path().to_path_buf();
+        async move {
+            let (mut tx, mut rx) = tokio::io::duplex(1 << 16);
+            let mut msgs = vec![TransferMessage::Offer {
+                transfer_id: 7,
+                entries: vec![file_entry("f.txt", data.len() as u64)],
+                total_bytes: data.len() as u64,
+                drop_target: None,
+            }];
+            msgs.extend(file_msgs(data));
+            msgs.push(TransferMessage::Complete);
+            let w = tokio::spawn(async move {
+                for m in &msgs {
+                    write_frame(&mut tx, m).await.unwrap();
+                    tokio::task::yield_now().await;
+                }
+            });
+            let r = receive(&mut rx, &d, ReceiveOptions::default(), |_| {}).await;
+            w.await.unwrap();
+            r.unwrap()
+        }
+    };
+    let (a, b) = tokio::join!(run(b"first"), run(b"second!"));
+    let mut got: Vec<Vec<u8>> = [&a, &b]
+        .iter()
+        .map(|s| std::fs::read(&s.files[0]).unwrap())
+        .collect();
+    got.sort();
+    assert_eq!(got, vec![b"first".to_vec(), b"second!".to_vec()]);
+    assert_ne!(a.files[0], b.files[0]);
+    assert_eq!(
+        std::fs::read(dst.path().join(".f.txt.aetherpart-7-0")).unwrap(),
+        b"keep me"
+    );
+    let names: Vec<String> = std::fs::read_dir(dst.path())
+        .unwrap()
+        .map(|e| e.unwrap().file_name().into_string().unwrap())
+        .filter(|n| n.starts_with(".aetherpart-"))
+        .collect();
+    assert!(names.is_empty(), "staging left behind: {names:?}");
+}
+
+#[tokio::test]
+async fn failed_transfer_leaves_the_destination_untouched() {
+    let good = b"good".to_vec();
+    let (r, dst) = receive_raw(vec![
+        TransferMessage::Offer {
+            transfer_id: 1,
+            entries: vec![
+                aether_protocol::TransferEntry {
+                    rel_path: "d".into(),
+                    size: 0,
+                    is_dir: true,
+                    mtime_ns: 0,
+                },
+                aether_protocol::TransferEntry {
+                    rel_path: "d/empty_dir".into(),
+                    size: 0,
+                    is_dir: true,
+                    mtime_ns: 0,
+                },
+                file_entry("d/a", 4),
+                file_entry("d/b", 3),
+                file_entry("top.txt", 0),
+            ],
+            total_bytes: 7,
+            drop_target: None,
+        },
+        TransferMessage::Chunk {
+            entry: 2,
+            offset: 0,
+            data: good.clone(),
+        },
+        TransferMessage::EntryDone {
+            entry: 2,
+            blake3: *blake3::hash(&good).as_bytes(),
+        },
+        TransferMessage::EntryDone {
+            entry: 4,
+            blake3: *blake3::hash(b"").as_bytes(),
+        },
+        TransferMessage::Chunk {
+            entry: 3,
+            offset: 0,
+            data: b"bad".to_vec(),
+        },
+        TransferMessage::EntryDone {
+            entry: 3,
+            blake3: *blake3::hash(b"xyz").as_bytes(),
+        },
+        TransferMessage::Complete,
+    ])
+    .await;
+    assert!(matches!(r, Err(VfsError::Integrity(_))), "{r:?}");
+    // No directories, verified files or staging remain (all-or-nothing).
+    let left: Vec<_> = std::fs::read_dir(dst.path()).unwrap().collect();
+    assert!(left.is_empty(), "{left:?}");
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn staging_directory_is_private() {
+    use std::os::unix::fs::PermissionsExt;
+    let dst = tempfile::tempdir().unwrap();
+    let (mut tx, mut rx) = tokio::io::duplex(1 << 16);
+    write_frame(
+        &mut tx,
+        &TransferMessage::Offer {
+            transfer_id: 1,
+            entries: vec![file_entry("f", 1)],
+            total_bytes: 1,
+            drop_target: None,
+        },
+    )
+    .await
+    .unwrap();
+    let d = dst.path().to_path_buf();
+    let recv = tokio::spawn(async move {
+        receive(&mut rx, &d, ReceiveOptions::default(), |_| {}).await
+    });
+    // Wait for the staging directory to appear, then inspect it mid-transfer.
+    let staging = loop {
+        if let Some(e) = std::fs::read_dir(dst.path())
+            .unwrap()
+            .map(|e| e.unwrap())
+            .find(|e| e.file_name().to_str().unwrap().starts_with(".aetherpart-"))
+        {
+            break e.path();
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+    };
+    let name = staging.file_name().unwrap().to_str().unwrap().to_string();
+    assert_eq!(name.len(), ".aetherpart-".len() + 32, "{name}");
+    let mode = std::fs::metadata(&staging).unwrap().permissions().mode() & 0o777;
+    assert_eq!(mode, 0o700);
+    drop(tx); // abort: stream ends before Complete
+    assert!(recv.await.unwrap().is_err());
+    assert_eq!(std::fs::read_dir(dst.path()).unwrap().count(), 0);
+}

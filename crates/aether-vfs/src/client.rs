@@ -448,7 +448,7 @@ impl VfsClient {
             if offset >= attr.size || len == 0 {
                 return Ok(Vec::new());
             }
-            let end = attr.size.min(offset + len as u64);
+            let end = attr.size.min(offset.saturating_add(len as u64));
             let hashes = self.hashes_for(share, path, &attr, attempt > 0).await?;
             if hashes.len() as u64 != attr.size.div_ceil(cs) {
                 self.invalidate(share, path);
@@ -523,7 +523,7 @@ impl VfsClient {
                 let data = chunks[slot].as_ref().expect("all chunks present");
                 let base = idx * cs;
                 let from = offset.max(base) - base;
-                let to = end.min(base + data.len() as u64) - base;
+                let to = end.min(base.saturating_add(data.len() as u64)) - base;
                 if from < to {
                     out.extend_from_slice(&data[from as usize..to as usize]);
                 }

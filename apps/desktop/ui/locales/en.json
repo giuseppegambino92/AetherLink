@@ -77,7 +77,24 @@
     "audioPermission": "The remote computer hasn’t allowed audio capture yet. On a Mac, ask its owner to enable AetherLink in System Settings → Privacy & Security → Screen & System Audio Recording.",
     "audioOutputUnavailable": "No audio output device is available on this computer.",
     "audioOutputNotFound": "That audio output device is no longer available.",
-    "hidNotStarted": "Start the iPhone control first."
+    "hidNotStarted": "Start the iPhone control first.",
+    "permission": {
+      "input": "The other computer doesn't allow keyboard and mouse control in this session.",
+      "clipboard": "The other computer doesn't allow clipboard sharing in this session.",
+      "fileTransfer": "The other computer doesn't accept files in this session.",
+      "drives": "The other computer doesn't allow access to its drives in this session.",
+      "semanticUi": "The other computer doesn't allow ⌘K actions in this session.",
+      "audio": "The other computer doesn't share its sound in this session.",
+      "terminal": "The other computer doesn't allow the remote terminal. Its owner can turn it on in Settings → Access.",
+      "portForwarding": "The other computer doesn't allow port forwarding. Its owner can turn it on in Settings → Access.",
+      "usb": "The other computer doesn't allow USB redirection.",
+      "ghostMode": "The other computer doesn't allow Ghost Mode. Its owner can turn it on in Settings → Access.",
+      "virtualDisplay": "The other computer doesn't allow virtual displays in this session."
+    },
+    "ghostUnavailable": "Ghost Mode couldn't hide the other computer's screen, so it stays off.",
+    "tooManyStreams": "Too many tools are open in this session. Close some and try again.",
+    "ownerVerificationFailed": "The other computer's owner didn't confirm the connection (Touch ID / Windows Hello).",
+    "ownerVerificationUnavailable": "Touch ID, Windows Hello or a login password isn't available on this computer, so this option can't be turned on."
   },
   "os": {
     "macos": "macOS",
@@ -282,6 +299,69 @@
       "palette": "Semantic search in a session",
       "terminal": "Remote terminal",
       "quickConnect": "Quick Connect on the dashboard"
+    },
+    "access": {
+      "title": "Access",
+      "subtitle": "What connected devices can do on this computer",
+      "viewAlways": "Connected devices can always see the screen. Everything else is up to you, and changes apply right away, also to sessions already open.",
+      "sensitive": "Sensitive",
+      "owner": {
+        "title": "Confirm trusted devices with Touch ID",
+        "body": "Even trusted devices connect only after you confirm here with Touch ID, Windows Hello or your password. If nobody confirms, the connection is refused.",
+        "unavailable": "Not available on this computer: Touch ID, Windows Hello or a login password is needed."
+      },
+      "ports": {
+        "title": "Allowed ports",
+        "body": "Only these ports can be reached. Leave empty to allow none.",
+        "placeholder": "e.g. 3000, 5432",
+        "invalid": "Enter port numbers from 1 to 65535, separated by commas."
+      },
+      "perm": {
+        "input": {
+          "title": "Control keyboard and mouse",
+          "body": "Type, click and scroll on this computer."
+        },
+        "clipboard": {
+          "title": "Share the clipboard",
+          "body": "Copy and paste between the two computers."
+        },
+        "fileTransfer": {
+          "title": "Receive files",
+          "body": "Files dropped onto the session window are saved in Downloads."
+        },
+        "drives": {
+          "title": "Open shared folders",
+          "body": "Mount the folders you share in Virtual Drives."
+        },
+        "semanticUi": {
+          "title": "⌘K actions",
+          "body": "Find and press buttons, menus and fields by name. Needs keyboard and mouse control."
+        },
+        "audio": {
+          "title": "Hear this computer's sound",
+          "body": "Stream system audio to the other device."
+        },
+        "virtualDisplay": {
+          "title": "Add virtual displays",
+          "body": "Create a temporary extra screen for the session."
+        },
+        "ghostMode": {
+          "title": "Ghost Mode",
+          "body": "Darken this computer's screen while someone works on it remotely."
+        },
+        "terminal": {
+          "title": "Remote terminal",
+          "body": "Open a shell on this computer with your user's rights."
+        },
+        "portForwarding": {
+          "title": "Port forwarding",
+          "body": "Reach services running on this computer, only on the ports listed below."
+        },
+        "usb": {
+          "title": "USB redirection",
+          "body": "Use USB devices attached to this computer."
+        }
+      }
     }
   },
   "consent": {

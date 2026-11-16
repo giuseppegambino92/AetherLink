@@ -720,3 +720,11 @@
   margin: 6px 4px;
   background: var(--hairline);
 }
+
+/* Capabilities the host has not granted to this session. */
+.hud-btn:disabled,
+.hud-btn.denied {
+  opacity: 0.32;
+  cursor: not-allowed;
+  pointer-events: none;
+}

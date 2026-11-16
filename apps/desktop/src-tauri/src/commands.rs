@@ -42,6 +42,12 @@ pub async fn get_permissions() -> BackendResult<Value> {
     backend::get_permissions().await
 }
 
+/// Whether Touch ID / Windows Hello / account-password verification can gate trusted devices here.
+#[tauri::command]
+pub async fn owner_verification_available() -> bool {
+    tauri::async_runtime::spawn_blocking(aether_core::local_auth::is_available).await.unwrap_or(false)
+}
+
 #[tauri::command]
 pub async fn open_permission_settings(kind: String) -> BackendResult<()> {
     backend::open_permission_settings(kind).await

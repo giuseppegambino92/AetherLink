@@ -298,7 +298,7 @@ impl NFSFileSystem for AetherNfs {
                 .read_cached(self.share, &path, offset, count)
                 .await
                 .map_err(to_nfs)?;
-            let eof = offset + data.len() as u64 >= attr.size;
+            let eof = offset.saturating_add(data.len() as u64) >= attr.size;
             Ok((data, eof))
         } else {
             self.client

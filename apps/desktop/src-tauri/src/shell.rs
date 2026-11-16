@@ -324,19 +324,22 @@ pub fn copy_text(app: &AppHandle, text: String) -> Result<(), String> {
 /// physical monitor of the *host*. AetherLink's own process is excluded from screen
 /// capture, so the remote controller keeps seeing the real desktop while people in
 /// front of the machine only see the curtain.
-pub fn set_privacy_curtain(app: &AppHandle, enabled: bool) {
+pub fn set_privacy_curtain(app: &AppHandle, enabled: bool) -> bool {
     let app = app.clone();
     let handle = app.clone();
-    let _ = handle.run_on_main_thread(move || {
+    let (tx, rx) = std::sync::mpsc::channel::<bool>();
+    let scheduled = handle.run_on_main_thread(move || {
         for (label, w) in app.webview_windows() {
             if label.starts_with("curtain-") {
                 let _ = w.destroy();
             }
         }
         if !enabled {
+            let _ = tx.send(true);
             return;
         }
         let monitors = app.available_monitors().unwrap_or_default();
+        let mut raised = 0usize;
         for (i, m) in monitors.iter().enumerate() {
             let scale = m.scale_factor();
             let pos = m.position().to_logical::<f64>(scale);
@@ -352,11 +355,19 @@ pub fn set_privacy_curtain(app: &AppHandle, enabled: bool) {
                 .position(pos.x, pos.y)
                 .inner_size(size.width, size.height)
                 .build();
-            if let Err(e) = built {
-                tracing::warn!("privacy curtain on monitor {i} failed: {e}");
+            match built {
+                Ok(_) => raised += 1,
+                Err(e) => tracing::warn!("privacy curtain on monitor {i} failed: {e}"),
             }
         }
+        // Protection only counts when every monitor is covered.
+        let _ = tx.send(!monitors.is_empty() && raised == monitors.len());
     });
+    if scheduled.is_err() {
+        return !enabled;
+    }
+    // Called from a blocking thread (never the main thread), so waiting here cannot deadlock.
+    rx.recv_timeout(std::time::Duration::from_secs(5)).unwrap_or(false)
 }
 
 /// Ctrl+Opt+Cmd+Esc lifts Ghost Mode locally (registered only while the curtain is up), so

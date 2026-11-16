@@ -52,11 +52,9 @@ struct TauriEvents(AppHandle);
 impl EventSink for TauriEvents {
     fn emit(&self, name: &str, payload: Value) {
         if name == "ghost-mode" {
+            // `enabled` is the protection really in effect; the curtains themselves are raised by
+            // the engine (native) or through the fallback installed in `start_with`.
             let enabled = payload["enabled"].as_bool().unwrap_or(false);
-            let native = payload["native"].as_bool().unwrap_or(false);
-            // The engine raises the native shielding-level curtain itself (macOS); the webview
-            // curtain is only the fallback where that is unavailable.
-            crate::shell::set_privacy_curtain(&self.0, enabled && !native);
             crate::shell::set_ghost_panic_hotkey(&self.0, enabled);
         }
         let _ = self.0.emit(name, payload);
@@ -73,6 +71,9 @@ pub fn start(app: &AppHandle) -> Result<(), String> {
 pub fn start_with(app: &AppHandle, cfg: EngineConfig) -> Result<(), String> {
     let events: Arc<dyn EventSink> = Arc::new(TauriEvents(app.clone()));
     let engine = tauri::async_runtime::block_on(Engine::start(cfg, events)).map_err(|e| e.to_string())?;
+    // Webview curtain where the native Ghost Mode curtain is unavailable (e.g. Wayland).
+    let curtain_app = app.clone();
+    engine.set_ghost_fallback(Arc::new(move |enabled| crate::shell::set_privacy_curtain(&curtain_app, enabled)));
     ENGINE.set(engine).map_err(|_| "engine already started".to_owned())
 }
 

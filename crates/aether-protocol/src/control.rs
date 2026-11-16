@@ -98,4 +98,73 @@ pub enum ControlMessage {
     /// Human-readable, localizable error. `code` is a stable i18n key, e.g. `"error.capture.permission"`.
     Error { code: String, detail: String },
     Bye,
+    /// Host → client after `SessionReady`: what this session may do. Requests outside it are
+    /// refused by the host with `Error { code: "errors.permission.<capability>" }`.
+    Permissions(SessionPermissions),
+}
+
+/// Capabilities a host grants to a remote session. Viewing the screen is always allowed once
+/// authenticated; everything else is opt-in per capability (least privilege).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct SessionPermissions {
+    /// Keyboard and mouse injection.
+    pub input: bool,
+    /// Clipboard synchronization.
+    pub clipboard: bool,
+    /// Files dropped onto the session window (pushed to the host's Downloads).
+    pub file_transfer: bool,
+    /// Remote drives (the host's shared folders, mounted on the client).
+    pub drives: bool,
+    /// ⌘K semantic actions on the host's accessibility tree.
+    pub semantic_ui: bool,
+    /// System-audio streaming.
+    pub audio: bool,
+    /// Remote shell (Quake terminal).
+    pub terminal: bool,
+    /// TCP tunnels to the host's loopback services (only to `tunnel_allowed_ports`).
+    pub port_forwarding: bool,
+    /// USB device redirection.
+    pub usb: bool,
+    /// Ghost Mode (darkens the host's physical screen).
+    pub ghost_mode: bool,
+    /// Headless virtual displays on the host.
+    pub virtual_display: bool,
+}
+
+impl Default for SessionPermissions {
+    /// Remote assistance: view, control, clipboard, files, drives, ⌘K, audio and virtual
+    /// displays. Terminal, port forwarding, USB and Ghost Mode must be enabled explicitly.
+    fn default() -> Self {
+        Self {
+            input: true,
+            clipboard: true,
+            file_transfer: true,
+            drives: true,
+            semantic_ui: true,
+            audio: true,
+            terminal: false,
+            port_forwarding: false,
+            usb: false,
+            ghost_mode: false,
+            virtual_display: true,
+        }
+    }
+}
+
+impl SessionPermissions {
+    /// Nothing but viewing the screen.
+    pub const VIEW_ONLY: Self = Self {
+        input: false,
+        clipboard: false,
+        file_transfer: false,
+        drives: false,
+        semantic_ui: false,
+        audio: false,
+        terminal: false,
+        port_forwarding: false,
+        usb: false,
+        ghost_mode: false,
+        virtual_display: false,
+    };
 }

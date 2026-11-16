@@ -130,8 +130,45 @@ pub struct Engine {
     pub(crate) clients: Mutex<HashMap<u64, Arc<ClientSession>>>,
     pub(crate) hosts: Mutex<HashMap<u64, HostSessionInfo>>,
     pub(crate) pending_consent: Mutex<HashMap<u64, (Hello, oneshot::Sender<bool>)>>,
+    /// True only while Ghost Mode is requested *and* a curtain (native or shell) is really up.
     pub(crate) ghost_active: AtomicBool,
+    /// App-shell curtain used when the native one is unavailable (see [`Engine::set_ghost_fallback`]).
+    ghost_fallback: Mutex<Option<GhostFallback>>,
+    /// Current session permissions; host sessions watch it to apply changes live.
+    pub(crate) permissions: tokio::sync::watch::Sender<aether_protocol::SessionPermissions>,
+    /// One owner-verification prompt at a time (a trusted key must not be able to queue prompts).
+    pub(crate) owner_prompt: tokio::sync::Mutex<()>,
     next_id: AtomicU64,
+}
+
+/// Raises (`true`) or removes (`false`) the app shell's own privacy curtain; returns whether the
+/// requested state is now in effect. Called on a blocking thread.
+pub type GhostFallback = Arc<dyn Fn(bool) -> bool + Send + Sync>;
+
+/// Decide and apply the fallback curtain: wanted only when Ghost Mode is on and the native
+/// curtain is not up (otherwise it is taken down). Returns `(fallback_active, effective)`.
+fn resolve_ghost(enabled: bool, native_active: bool, fallback: Option<&(dyn Fn(bool) -> bool + Send + Sync)>) -> (bool, bool) {
+    let want_fallback = enabled && !native_active;
+    let fallback_active = match fallback {
+        Some(f) => f(want_fallback) && want_fallback,
+        None => false,
+    };
+    (fallback_active, native_active || fallback_active)
+}
+
+/// What [`Engine::set_ghost_mode`] actually achieved.
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GhostOutcome {
+    /// What was asked for.
+    pub requested: bool,
+    /// The native curtain (shielding level / capture-excluded window + backlight) is up.
+    pub native_active: bool,
+    /// The app-shell fallback curtain is up.
+    pub fallback_active: bool,
+    /// The host's screen is really hidden (`native_active || fallback_active`).
+    pub effective: bool,
+    pub status: aether_display::ghost::GhostStatus,
 }
 
 impl Engine {
@@ -162,6 +199,7 @@ impl Engine {
             }
         }
         let password = RotatingPassword::new(Duration::from_secs(settings.password_lifetime_secs.max(60)));
+        let (permissions, _) = tokio::sync::watch::channel(settings.permissions);
         let engine = Arc::new(Self {
             cfg,
             identity,
@@ -179,6 +217,9 @@ impl Engine {
             hosts: Mutex::new(HashMap::new()),
             pending_consent: Mutex::new(HashMap::new()),
             ghost_active: AtomicBool::new(false),
+            ghost_fallback: Mutex::new(None),
+            permissions,
+            owner_prompt: tokio::sync::Mutex::new(()),
             next_id: AtomicU64::new(1),
         });
         match aether_display::brightness::restore_pending(&engine.brightness_restore_file()) {
@@ -240,10 +281,16 @@ impl Engine {
         self.cfg.config_dir.join("brightness-restore.json")
     }
 
-    /// Ghost Mode on this host: system-level curtain + backlight off (macOS), exact restore on
-    /// disable. Emits `ghost-mode` `{enabled, native, status}`; when `native` is false the app
-    /// shell shows its own (webview) curtain instead.
-    pub async fn set_ghost_mode(&self, enabled: bool) -> aether_display::ghost::GhostStatus {
+    /// Install the app shell's fallback curtain (desktop: full-screen webview windows).
+    pub fn set_ghost_fallback(&self, f: GhostFallback) {
+        *self.ghost_fallback.lock() = Some(f);
+    }
+
+    /// Ghost Mode on this host: native curtain + backlight off with exact restore (macOS,
+    /// Windows, X11), else the app shell's fallback curtain. The state reported (and kept for
+    /// "lift when the last controller leaves") is what is *really* in effect: if neither curtain
+    /// comes up, Ghost Mode stays off. Emits `ghost-mode` with the full [`GhostOutcome`].
+    pub async fn set_ghost_mode(&self, enabled: bool) -> GhostOutcome {
         let restore = self.brightness_restore_file();
         let res = tokio::task::spawn_blocking(move || {
             if enabled {
@@ -256,20 +303,48 @@ impl Engine {
             }
         })
         .await;
-        let (status, native) = match res {
-            Ok(Ok(s)) => (s, true),
+        let status = match res {
+            Ok(Ok(s)) => s,
             Ok(Err(e)) => {
-                tracing::info!("native Ghost Mode unavailable ({e}); app shell curtain will be used");
-                (aether_display::ghost::status(), false)
+                if enabled {
+                    tracing::info!("native Ghost Mode unavailable ({e}); trying the app shell curtain");
+                } else {
+                    tracing::warn!("native Ghost Mode disable failed: {e}");
+                }
+                aether_display::ghost::status()
             }
             Err(e) => {
                 tracing::warn!("ghost task failed: {e}");
-                (aether_display::ghost::status(), false)
+                aether_display::ghost::status()
             }
         };
-        self.ghost_active.store(enabled, Ordering::Relaxed);
-        events::emit(&*self.events, names::GHOST_MODE, &serde_json::json!({ "enabled": enabled, "native": native, "status": status }));
-        status
+        let native_active = status.active;
+        let fallback = self.ghost_fallback.lock().clone();
+        let (fallback_active, effective) = match fallback {
+            Some(f) => {
+                tokio::task::spawn_blocking(move || resolve_ghost(enabled, native_active, Some(&*f))).await.unwrap_or((false, native_active))
+            }
+            None => resolve_ghost(enabled, native_active, None),
+        };
+        if enabled && !effective {
+            tracing::warn!("Ghost Mode requested but no curtain could be raised; leaving it off");
+        }
+        self.ghost_active.store(enabled && effective, Ordering::Relaxed);
+        let outcome = GhostOutcome { requested: enabled, native_active, fallback_active, effective, status };
+        events::emit(
+            &*self.events,
+            names::GHOST_MODE,
+            &serde_json::json!({
+                // `enabled` = protection really in effect (what the UI should show).
+                "enabled": enabled && effective,
+                "requested": outcome.requested,
+                "native": outcome.native_active,
+                "fallback": outcome.fallback_active,
+                "effective": outcome.effective,
+                "status": outcome.status,
+            }),
+        );
+        outcome
     }
 
     pub fn local_addr(&self) -> Option<SocketAddr> {
@@ -346,6 +421,13 @@ impl Engine {
     // ------------------------------------------------------------------ settings
 
     pub async fn set_settings(&self, new: Settings) -> Result<Settings> {
+        if new.require_biometric && !self.settings.read().require_biometric {
+            // Fail-closed gate: enabling it where it cannot work would lock out every trusted device.
+            let available = tokio::task::spawn_blocking(crate::local_auth::is_available).await.unwrap_or(false);
+            if !available {
+                return Err(CoreError::Invalid("errors.ownerVerificationUnavailable".into()));
+            }
+        }
         new.save(&self.cfg.config_dir.join("settings.json"))?;
         let old = std::mem::replace(&mut *self.settings.write(), new.clone());
         if old.password_lifetime_secs != new.password_lifetime_secs {
@@ -353,6 +435,9 @@ impl Engine {
         }
         if old.relay_server != new.relay_server || old.advertise_on_lan != new.advertise_on_lan || old.device_name != new.device_name {
             self.apply_network_settings().await;
+        }
+        if old.permissions != new.permissions {
+            self.permissions.send_replace(new.permissions);
         }
         if old.clipboard_mode != new.clipboard_mode {
             let clients: Vec<_> = self.clients.lock().values().cloned().collect();
@@ -620,7 +705,7 @@ impl Engine {
     }
 
     fn save_shares(&self) -> Result<()> {
-        std::fs::write(self.cfg.config_dir.join("shares.json"), serde_json::to_vec_pretty(&*self.shares.lock())?)?;
+        crate::persist(&self.cfg.config_dir.join("shares.json"), &serde_json::to_vec_pretty(&*self.shares.lock())?)?;
         Ok(())
     }
 
@@ -663,6 +748,7 @@ fn net(e: impl std::fmt::Display) -> CoreError {
 pub fn error_code(e: &CoreError) -> String {
     match e {
         CoreError::Net(m) | CoreError::Invalid(m) if m.starts_with("errors.") => m.clone(),
+        CoreError::Net(m) if m.contains("OwnerVerificationFailed") => "errors.ownerVerificationFailed".into(),
         CoreError::Net(m) if m.contains("assword") || m.contains("WrongPassword") => "errors.wrongPassword".into(),
         CoreError::Net(m) if m.to_lowercase().contains("timed out") || m.to_lowercase().contains("timeout") => "errors.timeout".into(),
         other => other.code().into(),
@@ -684,4 +770,31 @@ async fn resolve(target: &str, default_port: u16) -> Result<SocketAddr> {
 
 fn sys_locale() -> String {
     std::env::var("LANG").unwrap_or_default()
+}
+
+#[cfg(test)]
+mod ghost_tests {
+    use super::resolve_ghost;
+    use std::sync::Mutex;
+
+    #[test]
+    fn ghost_state_reflects_real_protection() {
+        let calls = Mutex::new(Vec::new());
+        let ok = |want: bool| {
+            calls.lock().unwrap().push(want);
+            true
+        };
+        let broken = |_want: bool| false;
+        // Native curtain up: fallback taken down, protected.
+        assert_eq!(resolve_ghost(true, true, Some(&ok)), (false, true));
+        // Native unavailable, fallback works: protected by the fallback.
+        assert_eq!(resolve_ghost(true, false, Some(&ok)), (true, true));
+        // Native unavailable and fallback fails: NOT protected (Ghost Mode must report off).
+        assert_eq!(resolve_ghost(true, false, Some(&broken)), (false, false));
+        // No fallback installed (headless engine): only the native state counts.
+        assert_eq!(resolve_ghost(true, false, None), (false, false));
+        // Disabling always asks the fallback to come down and reports nothing active.
+        assert_eq!(resolve_ghost(false, false, Some(&ok)), (false, false));
+        assert_eq!(*calls.lock().unwrap(), vec![false, true, false]);
+    }
 }

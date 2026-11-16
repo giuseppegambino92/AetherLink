@@ -72,7 +72,24 @@
     "bluetoothUnavailable": "Il Bluetooth è spento o non disponibile su questo telefono.",
     "bluetoothPermission": "AetherLink ha bisogno del permesso Dispositivi nelle vicinanze per usare il Bluetooth.",
     "accessibilityDisabled": "Attiva il servizio di accessibilità di AetherLink per consentire il controllo remoto.",
-    "shizukuUnavailable": "Shizuku non è in esecuzione su questo telefono."
+    "shizukuUnavailable": "Shizuku non è in esecuzione su questo telefono.",
+    "permission": {
+      "input": "L'altro computer non consente il controllo di tastiera e mouse in questa sessione.",
+      "clipboard": "L'altro computer non consente la condivisione degli appunti in questa sessione.",
+      "fileTransfer": "L'altro computer non accetta file in questa sessione.",
+      "drives": "L'altro computer non consente l'accesso alle sue unità in questa sessione.",
+      "semanticUi": "L'altro computer non consente le azioni ⌘K in questa sessione.",
+      "audio": "L'altro computer non condivide il suo audio in questa sessione.",
+      "terminal": "L'altro computer non consente il terminale remoto. Il proprietario può attivarlo in Impostazioni → Accesso.",
+      "portForwarding": "L'altro computer non consente l'inoltro delle porte. Il proprietario può attivarlo in Impostazioni → Accesso.",
+      "usb": "L'altro computer non consente la redirezione USB.",
+      "ghostMode": "L'altro computer non consente la modalità Ghost. Il proprietario può attivarla in Impostazioni → Accesso.",
+      "virtualDisplay": "L'altro computer non consente gli schermi virtuali in questa sessione."
+    },
+    "ghostUnavailable": "La modalità Ghost non è riuscita a nascondere lo schermo dell'altro computer, quindi resta disattivata.",
+    "tooManyStreams": "In questa sessione ci sono troppi strumenti aperti. Chiudine qualcuno e riprova.",
+    "ownerVerificationFailed": "Il proprietario dell'altro computer non ha confermato la connessione (Touch ID / Windows Hello).",
+    "ownerVerificationUnavailable": "Su questo computer non sono disponibili Touch ID, Windows Hello o una password di accesso: l'opzione non si può attivare."
   },
   "os": {
     "macos": "macOS",

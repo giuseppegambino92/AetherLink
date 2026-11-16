@@ -1,7 +1,7 @@
 //! Persisted user settings (shared by desktop and mobile front-ends).
 
 use crate::Result;
-use aether_protocol::ClipboardMode;
+use aether_protocol::{ClipboardMode, SessionPermissions};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
@@ -21,7 +21,8 @@ pub struct Settings {
     pub clipboard_mode: ClipboardMode,
     /// Allow unattended access from trusted devices.
     pub allow_unattended: bool,
-    /// Require TouchID / Windows Hello before accepting a trusted session.
+    /// Require Touch ID / Windows Hello (or the account password) from the person at this
+    /// computer before a trusted device is admitted. Fails closed where unavailable.
     pub require_biometric: bool,
     /// Ask the local user to accept incoming sessions instead of using the one-time password.
     pub require_consent: bool,
@@ -38,8 +39,11 @@ pub struct Settings {
     pub lossless_text: bool,
     pub dvr_enabled: bool,
     pub dvr_window_secs: u32,
-    /// Ports the host allows to be tunneled (empty = any loopback port).
+    /// Loopback ports a session may tunnel to when `permissions.port_forwarding` is on.
+    /// Explicit allowlist: empty means no port at all.
     pub tunnel_allowed_ports: Vec<u16>,
+    /// What incoming sessions may do beyond viewing the screen.
+    pub permissions: SessionPermissions,
     pub mount_root: Option<PathBuf>,
 }
 
@@ -65,6 +69,7 @@ impl Default for Settings {
             dvr_enabled: true,
             dvr_window_secs: 180,
             tunnel_allowed_ports: vec![],
+            permissions: SessionPermissions::default(),
             mount_root: None,
         }
     }
@@ -79,15 +84,10 @@ impl Settings {
         }
     }
 
-    /// Atomic write (temp file + rename).
+    /// Durable atomic write (owner-only temp file, `fsync`, rename, directory `fsync`): the
+    /// settings carry security policy, so a crash must never lose or tear the last change.
     pub fn save(&self, path: &Path) -> Result<()> {
-        if let Some(dir) = path.parent() {
-            std::fs::create_dir_all(dir)?;
-        }
-        let tmp = path.with_extension("json.tmp");
-        std::fs::write(&tmp, serde_json::to_vec_pretty(self)?)?;
-        std::fs::rename(tmp, path)?;
-        Ok(())
+        crate::persist(path, &serde_json::to_vec_pretty(self)?)
     }
 
     /// Effective UI language for a given OS locale string.
@@ -146,5 +146,34 @@ mod tests {
         assert_eq!(s.resolved_language("de"), Language::En);
         let forced = Settings { language: Language::It, ..Settings::default() };
         assert_eq!(forced.resolved_language("en"), Language::It);
+    }
+
+    #[test]
+    fn least_privilege_defaults() {
+        let s = Settings::default();
+        assert!(!s.permissions.terminal);
+        assert!(!s.permissions.port_forwarding);
+        assert!(!s.permissions.usb);
+        assert!(!s.permissions.ghost_mode);
+        assert!(s.tunnel_allowed_ports.is_empty());
+        // Files written before permissions existed get the safe defaults.
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        std::fs::write(&path, br#"{"tunnelAllowedPorts":[]}"#).unwrap();
+        assert_eq!(Settings::load(&path).unwrap().permissions, SessionPermissions::default());
+        std::fs::write(&path, br#"{"permissions":{"terminal":true}}"#).unwrap();
+        let p = Settings::load(&path).unwrap().permissions;
+        assert!(p.terminal && p.input && !p.port_forwarding);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn saved_settings_are_owner_only() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        Settings::default().save(&path).unwrap();
+        assert_eq!(std::fs::metadata(&path).unwrap().permissions().mode() & 0o777, 0o600);
+        assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 1, "no temp file left behind");
     }
 }

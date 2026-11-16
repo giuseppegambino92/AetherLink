@@ -41,6 +41,8 @@ export async function mountSession(root) {
   let sessionId = null;
   let connected = false;
   let ghost = false;
+  // Granted by the host (`session-permissions`); until it arrives assume the defaults.
+  let permissions = null;
   let lossless = true;
   let displays = [];
   let activeDisplay = null;
@@ -64,7 +66,8 @@ export async function mountSession(root) {
   const input = new InputCapture({
     surface: viewport,
     renderer,
-    send: (ev) => sessionId && connected && api.sendInput(sessionId, ev),
+    // View-only sessions: the host drops input anyway; don't send it.
+    send: (ev) => sessionId && connected && permissions?.input !== false && api.sendInput(sessionId, ev),
     isEnabled: () => connected && keyboardFree() && !document.activeElement?.closest?.('.drawer, .dvr, .hud, .quake, input, textarea'),
     onPointer: (n) => {
       lastPointer = n;
@@ -74,12 +77,12 @@ export async function mountSession(root) {
       // Local shortcuts (everything else goes to the remote machine).
       if ((e.metaKey || e.ctrlKey) && !e.altKey && e.code === 'KeyK') {
         e.preventDefault();
-        openPalette();
+        if (permissions?.semanticUi !== false && permissions?.input !== false) openPalette();
         return true;
       }
       if (e.ctrlKey && e.code === 'Backquote') {
         e.preventDefault();
-        if (terminal) terminal.toggle();
+        if (terminal && permissions?.terminal === true) terminal.toggle();
         return true;
       }
       // In Tauri the HUD hotkey is a global shortcut (see shell.rs); the
@@ -500,8 +503,13 @@ export async function mountSession(root) {
       markConnected();
       // Non-fatal host-side problems (missing permissions…) arrive on a 'connected' state.
       if (p.errorCode) toast({ key: p.errorCode, kind: 'error', timeout: 9000 });
+      // Ghost Mode refused or no curtain could be raised: the button must not claim protection.
+      if (['errors.ghostUnavailable', 'errors.permission.ghostMode'].includes(p.errorCode) && ghost) {
+        ghost = false;
+        hud.setPressed('ghost', false);
+      }
       // The host could not capture audio: stop local playback (the saved preference stays).
-      if (['errors.audioUnavailable', 'errors.audioPermission'].includes(p.errorCode) && audio.enabled) {
+      if (['errors.audioUnavailable', 'errors.audioPermission', 'errors.permission.audio'].includes(p.errorCode) && audio.enabled) {
         api.setAudio(sessionId, false).catch(() => {});
         audio.enabled = false;
         reflectAudio();
@@ -540,6 +548,22 @@ export async function mountSession(root) {
         if (audioRate.at && bytes >= audioRate.bytes) audioRate.kbps = ((bytes - audioRate.bytes) * 8) / (now - audioRate.at);
         audioRate = { bytes, at: now, kbps: audioRate.kbps };
         audioStats = p.audio;
+      }
+    })),
+    on('session-permissions', scoped((p) => {
+      const perms = p.permissions || {};
+      permissions = perms;
+      hud.setAllowed({
+        audio: perms.audio !== false,
+        drives: perms.drives !== false,
+        ports: perms.portForwarding === true,
+        terminal: perms.terminal === true,
+        search: perms.semanticUi !== false && perms.input !== false,
+        ghost: perms.ghostMode === true,
+      });
+      if (perms.ghostMode !== true && ghost) {
+        ghost = false;
+        hud.setPressed('ghost', false);
       }
     })),
     on('session-displays', scoped((p) => {

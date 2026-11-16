@@ -3,7 +3,7 @@ import { h, replace } from '../lib/dom.js';
 import { icon } from '../lib/icons.js';
 import { api, isNotWired } from '../api.js';
 import { card, emptyState, segmented, toggleSwitch } from './controls.js';
-import { toastError, toastSuccess } from './toast.js';
+import { toast, toastError, toastSuccess } from './toast.js';
 import { getLocale, setLocale, t, tp, onLocaleChange } from '../i18n.js';
 import { acceleratorKeys, eventToAccelerator, loadHudHotkey, saveHudHotkey } from '../lib/hotkeys.js';
 
@@ -164,6 +164,139 @@ export function preferencesCard() {
   }
   load();
   el.currentSettings = () => settings;
+  return el;
+}
+
+// What an incoming session may do beyond viewing the screen (host-side, least privilege).
+// Order = how the rows are shown; `risky` rows get a warning chip when enabled.
+const SESSION_PERMS = [
+  { key: 'input', icon: 'keyboard' },
+  { key: 'clipboard', icon: 'clipboard' },
+  { key: 'fileTransfer', icon: 'upload' },
+  { key: 'drives', icon: 'drive' },
+  { key: 'semanticUi', icon: 'search' },
+  { key: 'audio', icon: 'speaker' },
+  { key: 'virtualDisplay', icon: 'monitor' },
+  { key: 'ghostMode', icon: 'ghost', risky: true },
+  { key: 'terminal', icon: 'terminal', risky: true },
+  { key: 'portForwarding', icon: 'plug', risky: true },
+  { key: 'usb', icon: 'link', risky: true },
+];
+
+/** Parse "22, 5432 3000" → [22, 3000, 5432]; null when something isn't a valid port. */
+export function parsePorts(text) {
+  const parts = String(text || '').split(/[\s,;]+/).filter(Boolean);
+  const out = new Set();
+  for (const p of parts) {
+    if (!/^\d{1,5}$/.test(p)) return null;
+    const n = Number(p);
+    if (n < 1 || n > 65535) return null;
+    out.add(n);
+  }
+  return [...out].sort((a, b) => a - b);
+}
+
+export function sessionAccessCard() {
+  const body = h('div');
+  const notice = h('div');
+  const el = card({ className: 'span-12', titleKey: 'settings.access.title', subtitleKey: 'settings.access.subtitle', iconName: 'lock', iconTone: 'violet', lift: false }, notice, body);
+  let settings = null;
+  let ownerAvailable = false;
+
+  async function save(patch) {
+    if (!settings) return false;
+    try {
+      settings = await api.setSettings({ ...settings, ...patch });
+      toastSuccess('settings.saved');
+      return true;
+    } catch (e) {
+      toastError(e);
+      return false;
+    }
+  }
+
+  const row = (titleKey, bodyKey, control, extra) =>
+    h(
+      'div',
+      { class: 'settings-row' },
+      h('div', {}, h('div', { class: 'row-title', i18n: titleKey }), bodyKey && h('div', { class: 'row-sub', style: { whiteSpace: 'normal' }, i18n: bodyKey }), extra),
+      control,
+    );
+
+  function render() {
+    if (!settings) return replace(body);
+    const perms = { ...(settings.permissions || {}) };
+
+    const owner = toggleSwitch({
+      checked: settings.requireBiometric === true,
+      labelKey: 'settings.access.owner.title',
+      onChange: async (v) => {
+        if (!(await save({ requireBiometric: v }))) owner.setChecked(!v);
+      },
+    });
+    if (!ownerAvailable && settings.requireBiometric !== true) {
+      owner.setAttribute('aria-disabled', 'true');
+      owner.style.pointerEvents = 'none';
+      owner.style.opacity = '0.45';
+    }
+
+    const ports = h('input', {
+      class: 'input',
+      style: { width: '220px' },
+      attrs: { spellcheck: 'false', autocomplete: 'off', inputmode: 'numeric' },
+      i18nAttr: { placeholder: 'settings.access.ports.placeholder', 'aria-label': 'settings.access.ports.title' },
+    });
+    ports.value = (settings.tunnelAllowedPorts || []).join(', ');
+    ports.addEventListener('change', async () => {
+      const list = parsePorts(ports.value);
+      if (!list) {
+        toast({ key: 'settings.access.ports.invalid', kind: 'error' });
+        ports.value = (settings.tunnelAllowedPorts || []).join(', ');
+        return;
+      }
+      if (await save({ tunnelAllowedPorts: list })) ports.value = list.join(', ');
+    });
+    const portsRow = row('settings.access.ports.title', 'settings.access.ports.body', ports);
+    portsRow.hidden = !perms.portForwarding;
+
+    const permRows = SESSION_PERMS.map((p) => {
+      const chip = p.risky ? h('span', { class: 'chip warning', style: { marginTop: '6px' }, hidden: !perms[p.key] }, h('span', { i18n: 'settings.access.sensitive' })) : null;
+      const sw = toggleSwitch({
+        checked: perms[p.key] === true,
+        labelKey: `settings.access.perm.${p.key}.title`,
+        onChange: async (v) => {
+          const next = { ...settings.permissions, [p.key]: v };
+          if (!(await save({ permissions: next }))) return sw.setChecked(!v);
+          if (chip) chip.hidden = !v;
+          if (p.key === 'portForwarding') portsRow.hidden = !v;
+        },
+      });
+      return row(`settings.access.perm.${p.key}.title`, `settings.access.perm.${p.key}.body`, sw, chip);
+    });
+
+    replace(
+      body,
+      row('settings.access.owner.title', ownerAvailable ? 'settings.access.owner.body' : 'settings.access.owner.unavailable', owner),
+      h('div', { class: 'settings-row' }, h('div', { class: 'row-sub', style: { whiteSpace: 'normal' }, i18n: 'settings.access.viewAlways' })),
+      ...permRows,
+      portsRow,
+    );
+  }
+
+  async function load() {
+    try {
+      [settings, ownerAvailable] = await Promise.all([api.getSettings(), api.ownerVerificationAvailable().catch(() => false)]);
+      replace(notice);
+    } catch (e) {
+      settings = null;
+      replace(
+        notice,
+        h('div', { class: 'banner' }, icon(isNotWired(e) ? 'plug' : 'alert', 16), h('span', { i18n: isNotWired(e) ? 'settings.engineSettingsUnavailable' : 'settings.loadFailed' })),
+      );
+    }
+    render();
+  }
+  load();
   return el;
 }
 

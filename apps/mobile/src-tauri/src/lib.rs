@@ -50,6 +50,7 @@ pub fn run() {
             commands::get_settings,
             commands::set_settings,
             commands::get_permissions,
+            commands::owner_verification_available,
             commands::open_permission_settings,
             commands::list_lan_peers,
             commands::list_trusted_devices,

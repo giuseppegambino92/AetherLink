@@ -54,6 +54,12 @@ export function createPreviewBackend() {
     hudHotkey: 'CmdOrCtrl+Shift+Period',
     allowUnattended: true,
     requireConsent: true,
+    requireBiometric: false,
+    tunnelAllowedPorts: [3000, 5173],
+    permissions: {
+      input: true, clipboard: true, fileTransfer: true, drives: true, semanticUi: true, audio: true,
+      virtualDisplay: true, ghostMode: false, terminal: false, portForwarding: false, usb: false,
+    },
   };
   const permissions = { screenRecording: 'granted', accessibility: 'denied', inputMonitoring: 'granted' };
   let lanPeers = [
@@ -105,6 +111,7 @@ export function createPreviewBackend() {
     rotate_password: () => (identity = { ...identity, password: randomPassword(), passwordExpiresAt: now() + 90_000 }),
     get_settings: () => settings,
     set_settings: ({ settings: s }) => (settings = { ...settings, ...s }),
+    owner_verification_available: () => true,
     get_permissions: () => permissions,
     open_permission_settings: () => null,
     list_lan_peers: () => lanPeers,

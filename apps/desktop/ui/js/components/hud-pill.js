@@ -172,6 +172,17 @@ export function createHud({ root, peerName, actions }) {
       b.setAttribute('aria-pressed', String(!!v));
       if (name === 'audio') replace(b, icon(v ? 'speaker' : 'speakerOff', 17));
     },
+    /** Grey out what the host does not allow: {audio, drives, ports, terminal, search, ghost}. */
+    setAllowed(allowed) {
+      const map = { audio: [audioBtn, audioMenuBtn], drives: [drivesBtn], ports: [portsBtn], terminal: [termBtn], search: [searchBtn], ghost: [ghostBtn] };
+      for (const [name, buttons] of Object.entries(map)) {
+        if (!(name in allowed)) continue;
+        for (const b of buttons) {
+          b.disabled = !allowed[name];
+          b.classList.toggle('denied', !allowed[name]);
+        }
+      }
+    },
     /** Partial update: only the provided metrics change. */
     setTelemetry({ fps: f, rttMs, bitrateKbps }) {
       if (f !== undefined && f !== null) fps.textContent = formatNumber(f, 0);

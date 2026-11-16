@@ -5,12 +5,15 @@
 //! followed by `EntryDone` with its BLAKE3 digest, then `Complete`.
 //!
 //! Receiver: [`receive`] validates every `rel_path` (relative, no `..`, NUL, drive/UNC
-//! prefixes), gives each top-level item a non-colliding name in the destination
-//! (`file (1).txt`, `dir (1)`), writes files to hidden temp files next to their final
-//! location and atomically renames them only after the BLAKE3 digest matches. Files are
-//! bounded by their offered size. On error or cancellation, temp files are removed;
-//! already verified files are kept.
-
+//! prefixes) and the offered sizes (checked arithmetic: a hostile offer cannot overflow
+//! them), then writes the whole transfer into a private staging directory created in the
+//! destination (`.aetherpart-<128-bit random>`, mode 0700 on Unix; the peer's transfer id
+//! never influences a path). Files are created with `create_new` (nothing pre-existing is
+//! ever truncated) and are bounded by their offered size. Only after `Complete`, with every
+//! file's BLAKE3 digest verified, are the top-level items moved into the destination, each
+//! under a non-colliding name (`file (1).txt`, `dir (1)`) using a no-replace rename, so an
+//! existing entry is never overwritten. On any error or cancellation the staging directory
+//! is removed and already published items are moved back: the destination is left as it was.
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -273,23 +276,141 @@ fn numbered(name: &str, n: u32) -> String {
     }
 }
 
-async fn unique_name(dir: &Path, name: &str, taken: &HashSet<String>) -> String {
-    let mut n = 0;
-    loop {
-        let cand = if n == 0 {
-            name.to_string()
-        } else {
-            numbered(name, n)
+/// Prefix of the private staging directory created inside the destination.
+const STAGING_PREFIX: &str = ".aetherpart-";
+
+/// Create the private staging directory (`0700` on Unix) with a random 128-bit name.
+async fn create_staging(dest: &Path) -> Result<PathBuf> {
+    for _ in 0..8 {
+        let token: [u8; 16] = rand::random();
+        let hex: String = token.iter().map(|b| format!("{b:02x}")).collect();
+        let dir = dest.join(format!("{STAGING_PREFIX}{hex}"));
+        #[cfg_attr(not(unix), allow(unused_mut))]
+        #[cfg(unix)]
+        let b = {
+            let mut b = fs::DirBuilder::new();
+            b.mode(0o700);
+            b
         };
-        if !taken.contains(&cand) && fs::symlink_metadata(dir.join(&cand)).await.is_err() {
-            return cand;
+        #[cfg(not(unix))]
+        let b = fs::DirBuilder::new();
+        match b.create(&dir).await {
+            Ok(()) => return Ok(dir),
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(e) => return Err(e.into()),
         }
-        n += 1;
+    }
+    Err(VfsError::Io(std::io::Error::other(
+        "could not create a staging directory",
+    )))
+}
+
+/// Rename `from` to `to`, failing with `AlreadyExists` instead of replacing `to`.
+#[allow(clippy::needless_return)] // one cfg block per platform, each returning
+fn rename_noreplace(from: &Path, to: &Path) -> std::io::Result<()> {
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    {
+        use std::os::unix::ffi::OsStrExt;
+        let f = std::ffi::CString::new(from.as_os_str().as_bytes())?;
+        let t = std::ffi::CString::new(to.as_os_str().as_bytes())?;
+        if unsafe { libc::renamex_np(f.as_ptr(), t.as_ptr(), libc::RENAME_EXCL) } == 0 {
+            return Ok(());
+        }
+        let e = std::io::Error::last_os_error();
+        if e.raw_os_error() != Some(libc::ENOTSUP) {
+            return Err(e);
+        }
+    }
+    #[cfg(target_os = "linux")]
+    {
+        use std::os::unix::ffi::OsStrExt;
+        let f = std::ffi::CString::new(from.as_os_str().as_bytes())?;
+        let t = std::ffi::CString::new(to.as_os_str().as_bytes())?;
+        let r = unsafe {
+            libc::syscall(
+                libc::SYS_renameat2,
+                libc::AT_FDCWD,
+                f.as_ptr(),
+                libc::AT_FDCWD,
+                t.as_ptr(),
+                libc::RENAME_NOREPLACE,
+            )
+        };
+        if r == 0 {
+            return Ok(());
+        }
+        let e = std::io::Error::last_os_error();
+        if !matches!(e.raw_os_error(), Some(libc::EINVAL | libc::ENOSYS)) {
+            return Err(e);
+        }
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::ffi::OsStrExt;
+        use windows_sys::Win32::Storage::FileSystem::MoveFileExW;
+        let w = |p: &Path| -> Vec<u16> { p.as_os_str().encode_wide().chain(Some(0)).collect() };
+        // No MOVEFILE_REPLACE_EXISTING: fails with ERROR_ALREADY_EXISTS.
+        if unsafe { MoveFileExW(w(from).as_ptr(), w(to).as_ptr(), 0) } != 0 {
+            return Ok(());
+        }
+        return Err(std::io::Error::last_os_error());
+    }
+    #[cfg(not(windows))]
+    {
+        // Filesystem without an atomic no-replace rename: check, then rename.
+        if std::fs::symlink_metadata(to).is_ok() {
+            return Err(std::io::ErrorKind::AlreadyExists.into());
+        }
+        return std::fs::rename(from, to);
+    }
+}
+
+fn is_collision(e: &std::io::Error) -> bool {
+    e.kind() == std::io::ErrorKind::AlreadyExists
+        || e.kind() == std::io::ErrorKind::DirectoryNotEmpty
+}
+
+/// Move each staged top-level item into `dest` under a non-colliding name, never replacing
+/// an existing entry. Returns the final names (offer order). On failure, the items already
+/// published are moved back into the staging directory.
+fn publish(staging: &Path, dest: &Path, roots: &[String]) -> Result<Vec<String>> {
+    let mut published: Vec<(String, String)> = Vec::new();
+    let res = (|| -> Result<()> {
+        for name in roots {
+            let from = staging.join(name);
+            let mut n = 0u32;
+            loop {
+                let cand = if n == 0 {
+                    name.clone()
+                } else {
+                    numbered(name, n)
+                };
+                match rename_noreplace(&from, &dest.join(&cand)) {
+                    Ok(()) => {
+                        published.push((name.clone(), cand));
+                        break;
+                    }
+                    Err(e) if is_collision(&e) && n < 10_000 => n += 1,
+                    Err(e) => return Err(e.into()),
+                }
+            }
+        }
+        Ok(())
+    })();
+    match res {
+        Ok(()) => Ok(published.into_iter().map(|(_, f)| f).collect()),
+        Err(e) => {
+            for (orig, fin) in published.iter().rev() {
+                if let Err(re) = std::fs::rename(dest.join(fin), staging.join(orig)) {
+                    tracing::warn!("transfer: could not roll back {fin:?}: {re}");
+                }
+            }
+            Err(e)
+        }
     }
 }
 
 struct OpenFile {
-    tmp: PathBuf,
     file: File,
     hasher: blake3::Hasher,
     written: u64,
@@ -297,22 +418,13 @@ struct OpenFile {
 
 struct Receiver {
     entries: Vec<TransferEntry>,
-    /// Final path per entry index.
-    finals: Vec<PathBuf>,
+    /// Staged path per entry index (inside the private staging directory).
+    staged: Vec<PathBuf>,
     open: HashMap<u32, OpenFile>,
     done: HashSet<u32>,
-    files: Vec<PathBuf>,
-    transfer_id: u64,
 }
 
 impl Receiver {
-    async fn cleanup(&mut self) {
-        for (_, of) in self.open.drain() {
-            drop(of.file);
-            let _ = fs::remove_file(&of.tmp).await;
-        }
-    }
-
     fn entry(&self, idx: u32) -> Result<&TransferEntry> {
         self.entries
             .get(idx as usize)
@@ -330,24 +442,19 @@ impl Receiver {
             if self.done.contains(&idx) {
                 return Err(VfsError::Protocol(format!("entry {idx} already completed")));
             }
-            let fin = &self.finals[idx as usize];
-            let parent = fin.parent().expect("final path has a parent").to_path_buf();
-            fs::create_dir_all(&parent).await?;
-            let tmp = parent.join(format!(
-                ".{}.aetherpart-{:x}-{idx}",
-                fin.file_name().and_then(|n| n.to_str()).unwrap_or("file"),
-                self.transfer_id
-            ));
+            let path = &self.staged[idx as usize];
+            if let Some(parent) = path.parent() {
+                fs::create_dir_all(parent).await?;
+            }
+            // Never truncate or reuse an existing file (e.g. a case-insensitive duplicate).
             let file = fs::OpenOptions::new()
                 .write(true)
-                .create(true)
-                .truncate(true)
-                .open(&tmp)
+                .create_new(true)
+                .open(path)
                 .await?;
             self.open.insert(
                 idx,
                 OpenFile {
-                    tmp,
                     file,
                     hasher: blake3::Hasher::new(),
                     written: 0,
@@ -390,11 +497,10 @@ where
         other => return Err(VfsError::Protocol(format!("expected Offer, got {other:?}"))),
     };
 
-    // Validate every path and map top-level names to non-colliding destinations.
-    let mut root_map: HashMap<String, String> = HashMap::new();
-    let mut taken = HashSet::new();
-    let mut roots = Vec::new();
-    let mut finals = Vec::with_capacity(entries.len());
+    // Validate every path; remember the top-level names in offer order.
+    let mut roots: Vec<String> = Vec::new();
+    let mut root_set = HashSet::new();
+    let mut rels: Vec<Vec<String>> = Vec::with_capacity(entries.len());
     let mut seen = HashSet::new();
     for e in &entries {
         let comps = split_rel_path(&e.rel_path).map_err(VfsError::InvalidPath)?;
@@ -410,42 +516,42 @@ where
                 e.rel_path
             )));
         }
-        let root = match root_map.get(comps[0]) {
-            Some(r) => r.clone(),
-            None => {
-                let r = unique_name(&dest, comps[0], &taken).await;
-                taken.insert(r.clone());
-                root_map.insert(comps[0].to_string(), r.clone());
-                roots.push(dest.join(&r));
-                r
-            }
-        };
-        let mut p = dest.join(root);
-        p.extend(&comps[1..]);
-        finals.push(p);
+        if root_set.insert(comps[0].to_string()) {
+            roots.push(comps[0].to_string());
+        }
+        if e.is_dir && e.size != 0 {
+            return Err(VfsError::Protocol(format!(
+                "directory entry {:?} has a size",
+                e.rel_path
+            )));
+        }
+        rels.push(comps.iter().map(|c| c.to_string()).collect());
     }
     let files_total = entries.iter().filter(|e| !e.is_dir).count() as u32;
-    let offered: u64 = entries.iter().map(|e| e.size).sum();
+    let offered = entries
+        .iter()
+        .try_fold(0u64, |acc, e| acc.checked_add(e.size))
+        .ok_or_else(|| VfsError::Protocol("offered sizes overflow".into()))?;
     if offered != total_bytes {
         return Err(VfsError::Protocol(
             "offer total does not match entry sizes".into(),
         ));
     }
 
-    // Directories are created up front (they live under freshly reserved root names).
-    for (e, p) in entries.iter().zip(&finals) {
-        if e.is_dir {
-            fs::create_dir_all(p).await?;
-        }
-    }
-
+    let staging = create_staging(&dest).await?;
+    let staged: Vec<PathBuf> = rels
+        .iter()
+        .map(|c| {
+            let mut p = staging.clone();
+            p.extend(c);
+            p
+        })
+        .collect();
     let mut rx = Receiver {
         entries,
-        finals,
+        staged,
         open: HashMap::new(),
         done: HashSet::new(),
-        files: Vec::new(),
-        transfer_id,
     };
     let mut prog = TransferProgress {
         transfer_id,
@@ -455,9 +561,15 @@ where
         entries_total: files_total,
         current: None,
     };
-    progress(&prog);
 
-    let res: Result<()> = async {
+    let res: Result<Vec<String>> = async {
+        // Directories are created in the staging area too, so nothing is visible early.
+        for (e, p) in rx.entries.iter().zip(&rx.staged) {
+            if e.is_dir {
+                fs::create_dir_all(p).await?;
+            }
+        }
+        progress(&prog);
         loop {
             if opts.cancel.is_cancelled() {
                 return Err(VfsError::Cancelled("cancelled by receiver".into()));
@@ -479,15 +591,21 @@ where
                             "out-of-order chunk for entry {entry}"
                         )));
                     }
-                    if offset + data.len() as u64 > size {
+                    let chunk_len = u64::try_from(data.len())
+                        .map_err(|_| VfsError::Protocol("chunk too large".into()))?;
+                    let end = offset
+                        .checked_add(chunk_len)
+                        .ok_or_else(|| VfsError::Protocol("chunk offset overflows".into()))?;
+                    if end > size {
                         return Err(VfsError::Protocol(format!(
                             "entry {entry} exceeds its offered size"
                         )));
                     }
                     of.file.write_all(&data).await?;
                     of.hasher.update(&data);
-                    of.written += data.len() as u64;
-                    prog.bytes_done += data.len() as u64;
+                    of.written = end;
+                    // Bounded by the (checked) offer total.
+                    prog.bytes_done += chunk_len;
                     prog.current = Some(rel);
                     progress(&prog);
                 }
@@ -501,26 +619,12 @@ where
                     of.file.sync_all().await.ok();
                     drop(of.file);
                     if of.hasher.finalize().as_bytes() != &digest {
-                        let _ = fs::remove_file(&of.tmp).await;
                         return Err(VfsError::Integrity(format!(
                             "BLAKE3 mismatch for {:?}",
                             rx.entries[entry as usize].rel_path
                         )));
                     }
-                    let mut fin = rx.finals[entry as usize].clone();
-                    if fs::symlink_metadata(&fin).await.is_ok() {
-                        // Something appeared at the reserved name meanwhile: pick another.
-                        let parent = fin.parent().expect("has parent").to_path_buf();
-                        let name = fin
-                            .file_name()
-                            .and_then(|n| n.to_str())
-                            .unwrap_or("file")
-                            .to_string();
-                        fin = parent.join(unique_name(&parent, &name, &HashSet::new()).await);
-                    }
-                    fs::rename(&of.tmp, &fin).await?;
                     rx.done.insert(entry);
-                    rx.files.push(fin);
                     prog.entries_done += 1;
                     progress(&prog);
                 }
@@ -536,7 +640,11 @@ where
                             "Complete received with {missing} unfinished file(s)"
                         )));
                     }
-                    return Ok(());
+                    // Everything is verified: publish atomically per top-level item.
+                    let (st, de, ro) = (staging.clone(), dest.clone(), roots.clone());
+                    return tokio::task::spawn_blocking(move || publish(&st, &de, &ro))
+                        .await
+                        .map_err(|e| VfsError::Io(std::io::Error::other(e)))?;
                 }
                 TransferMessage::Cancel { reason } => return Err(VfsError::Cancelled(reason)),
                 TransferMessage::Offer { .. } => {
@@ -547,23 +655,37 @@ where
     }
     .await;
 
-    match res {
-        Ok(()) => {
-            prog.current = None;
-            progress(&prog);
-            Ok(ReceiveSummary {
-                transfer_id,
-                roots,
-                files: std::mem::take(&mut rx.files),
-                bytes: prog.bytes_done,
-                drop_target,
-            })
-        }
-        Err(e) => {
-            rx.cleanup().await;
-            Err(e)
-        }
+    // Close any half-written file, then drop the staging area (empty after a publish).
+    rx.open.clear();
+    if let Err(e) = fs::remove_dir_all(&staging).await {
+        tracing::warn!("transfer: could not remove {}: {e}", staging.display());
     }
+    let finals = res?;
+    let rename: HashMap<&str, &str> = roots
+        .iter()
+        .map(String::as_str)
+        .zip(finals.iter().map(String::as_str))
+        .collect();
+    let files = rx
+        .entries
+        .iter()
+        .zip(&rels)
+        .filter(|(e, _)| !e.is_dir)
+        .map(|(_, c)| {
+            let mut p = dest.join(rename[c[0].as_str()]);
+            p.extend(&c[1..]);
+            p
+        })
+        .collect();
+    prog.current = None;
+    progress(&prog);
+    Ok(ReceiveSummary {
+        transfer_id,
+        roots: finals.iter().map(|f| dest.join(f)).collect(),
+        files,
+        bytes: prog.bytes_done,
+        drop_target,
+    })
 }
 
 #[cfg(test)]

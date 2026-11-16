@@ -414,7 +414,7 @@ impl Inner {
                 .read(
                     self.share,
                     &path,
-                    offset + out.len() as u64,
+                    offset.saturating_add(out.len() as u64),
                     size - out.len() as u32,
                 )
                 .await

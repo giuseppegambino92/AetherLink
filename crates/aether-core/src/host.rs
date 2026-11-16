@@ -11,7 +11,7 @@ use aether_protocol::*;
 use parking_lot::Mutex;
 use serde::Serialize;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant, SystemTime};
 use tokio::sync::{mpsc, oneshot};
 
@@ -53,6 +53,39 @@ impl HostAuthPolicy for HostPolicy {
             let ok = rx.await.unwrap_or(false);
             engine.pending_consent.lock().remove(&request_id);
             ok
+        })
+    }
+
+    /// `require_biometric`: Touch ID / Windows Hello / account password of the person at this
+    /// computer before a trusted device gets in. Fail-closed: errors, timeouts, a prompt already
+    /// open for another device and unsupported platforms all reject.
+    fn verify_trusted(&self, peer: &Hello) -> BoxFuture<'static, bool> {
+        let engine = self.engine.clone();
+        let peer_name = peer.device_name.clone();
+        Box::pin(async move {
+            let settings = engine.settings();
+            if !settings.require_biometric {
+                return true;
+            }
+            let Ok(_prompt) = engine.owner_prompt.try_lock() else {
+                tracing::warn!(peer = %peer_name, "owner verification already in progress; rejecting");
+                return false;
+            };
+            let reason = match settings.resolved_language(&std::env::var("LANG").unwrap_or_default()) {
+                crate::settings::Language::It => format!("consentire a «{peer_name}» di connettersi a questo computer"),
+                _ => format!("allow “{peer_name}” to connect to this computer"),
+            };
+            match tokio::task::spawn_blocking(move || crate::local_auth::verify(&reason)).await {
+                Ok(Ok(())) => true,
+                Ok(Err(e)) => {
+                    tracing::info!(peer = %peer_name, "owner verification failed: {e}");
+                    false
+                }
+                Err(e) => {
+                    tracing::warn!("owner verification task failed: {e}");
+                    false
+                }
+            }
         })
     }
 }
@@ -127,6 +160,146 @@ struct HostCtx {
     session_id: u64,
     clipboard_mode: tokio::sync::watch::Sender<ClipboardMode>,
     audio: Mutex<Option<crate::audio::HostAudio>>,
+    limits: StreamLimits,
+}
+
+/// What a capability check refers to; the name is the suffix of the
+/// `errors.permission.<name>` code sent to the controller.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Capability {
+    Input,
+    Clipboard,
+    FileTransfer,
+    Drives,
+    SemanticUi,
+    Audio,
+    Terminal,
+    PortForwarding,
+    Usb,
+    GhostMode,
+    VirtualDisplay,
+}
+
+impl Capability {
+    fn allowed(self, p: &SessionPermissions) -> bool {
+        match self {
+            Capability::Input => p.input,
+            Capability::Clipboard => p.clipboard,
+            Capability::FileTransfer => p.file_transfer,
+            Capability::Drives => p.drives,
+            // ⌘K presses buttons and fills fields: it is a form of input.
+            Capability::SemanticUi => p.semantic_ui && p.input,
+            Capability::Audio => p.audio,
+            Capability::Terminal => p.terminal,
+            Capability::PortForwarding => p.port_forwarding,
+            Capability::Usb => p.usb,
+            Capability::GhostMode => p.ghost_mode,
+            Capability::VirtualDisplay => p.virtual_display,
+        }
+    }
+
+    fn error_code(self) -> &'static str {
+        match self {
+            Capability::Input => "errors.permission.input",
+            Capability::Clipboard => "errors.permission.clipboard",
+            Capability::FileTransfer => "errors.permission.fileTransfer",
+            Capability::Drives => "errors.permission.drives",
+            Capability::SemanticUi => "errors.permission.semanticUi",
+            Capability::Audio => "errors.permission.audio",
+            Capability::Terminal => "errors.permission.terminal",
+            Capability::PortForwarding => "errors.permission.portForwarding",
+            Capability::Usb => "errors.permission.usb",
+            Capability::GhostMode => "errors.permission.ghostMode",
+            Capability::VirtualDisplay => "errors.permission.virtualDisplay",
+        }
+    }
+}
+
+/// Per-session caps on concurrently running services, so an authenticated peer cannot open
+/// unbounded shells, tunnels, USB claims or file streams. (QUIC itself also caps open streams.)
+struct StreamLimits {
+    total: Arc<tokio::sync::Semaphore>,
+    input: Arc<tokio::sync::Semaphore>,
+    file_transfer: Arc<tokio::sync::Semaphore>,
+    vfs: Arc<tokio::sync::Semaphore>,
+    clipboard: Arc<tokio::sync::Semaphore>,
+    dom: Arc<tokio::sync::Semaphore>,
+    port_control: Arc<tokio::sync::Semaphore>,
+    tunnel: Arc<tokio::sync::Semaphore>,
+    terminal: Arc<tokio::sync::Semaphore>,
+    usb: Arc<tokio::sync::Semaphore>,
+}
+
+impl StreamLimits {
+    const TOTAL: usize = 96;
+
+    fn new() -> Self {
+        let s = |n| Arc::new(tokio::sync::Semaphore::new(n));
+        Self {
+            total: s(Self::TOTAL),
+            input: s(2),
+            file_transfer: s(4),
+            vfs: s(8),
+            clipboard: s(2),
+            dom: s(2),
+            port_control: s(2),
+            tunnel: s(64),
+            terminal: s(4),
+            usb: s(4),
+        }
+    }
+
+    /// A permit for one more service of `kind`, or `None` when the session is at its limit.
+    fn acquire(&self, kind: &StreamKind) -> Option<(tokio::sync::OwnedSemaphorePermit, tokio::sync::OwnedSemaphorePermit)> {
+        let class = match kind {
+            StreamKind::Input => &self.input,
+            StreamKind::FileTransfer { .. } => &self.file_transfer,
+            StreamKind::Vfs => &self.vfs,
+            StreamKind::Clipboard => &self.clipboard,
+            StreamKind::Dom => &self.dom,
+            StreamKind::PortControl => &self.port_control,
+            StreamKind::PortTunnel { .. } => &self.tunnel,
+            StreamKind::Terminal { .. } => &self.terminal,
+            StreamKind::Usb { .. } => &self.usb,
+            _ => &self.total,
+        };
+        let total = self.total.clone().try_acquire_owned().ok()?;
+        let one = class.clone().try_acquire_owned().ok()?;
+        Some((total, one))
+    }
+}
+
+impl HostCtx {
+    fn permissions(&self) -> SessionPermissions {
+        *self.engine.permissions.borrow()
+    }
+
+    fn allowed(&self, cap: Capability) -> bool {
+        cap.allowed(&self.permissions())
+    }
+
+    /// `true` if allowed; otherwise tells the controller why the request was refused.
+    async fn check(&self, cap: Capability) -> bool {
+        if self.allowed(cap) {
+            return true;
+        }
+        tracing::info!(peer = %self.peer_name, ?cap, "request refused by session permissions");
+        send_error(self, cap.error_code(), "").await;
+        false
+    }
+
+    /// Resolves when `cap` is revoked (settings changed mid-session).
+    async fn revoked(&self, cap: Capability) {
+        let mut rx = self.engine.permissions.subscribe();
+        loop {
+            if !cap.allowed(&rx.borrow_and_update()) {
+                return;
+            }
+            if rx.changed().await.is_err() {
+                return std::future::pending().await;
+            }
+        }
+    }
 }
 
 pub(crate) async fn run_host_session(engine: Arc<Engine>, session: Session) {
@@ -174,7 +347,9 @@ pub(crate) async fn run_host_session(engine: Arc<Engine>, session: Session) {
     let control = streams::shared(control_tx);
     let (input_tx, input_rx) = std::sync::mpsc::channel::<InputEvent>();
     spawn_input_thread(input_rx, displays.clone(), control.clone());
-    let (cb_tx, _) = tokio::sync::watch::channel(engine.settings().clipboard_mode);
+    let initial_clipboard =
+        if engine.settings().permissions.clipboard { engine.settings().clipboard_mode } else { ClipboardMode::Disabled };
+    let (cb_tx, _) = tokio::sync::watch::channel(initial_clipboard);
     let ctx = Arc::new(HostCtx {
         engine: engine.clone(),
         conn: conn.clone(),
@@ -187,10 +362,13 @@ pub(crate) async fn run_host_session(engine: Arc<Engine>, session: Session) {
         session_id,
         clipboard_mode: cb_tx,
         audio: Mutex::new(None),
+        limits: StreamLimits::new(),
     });
 
     let ready = ControlMessage::SessionReady { displays, windows, active: CaptureTarget::Display { display_id: active } };
-    if control.lock().await.send(&ready).await.is_err() {
+    if control.lock().await.send(&ready).await.is_err()
+        || control.lock().await.send(&ControlMessage::Permissions(ctx.permissions())).await.is_err()
+    {
         finish(&ctx);
         return;
     }
@@ -202,12 +380,14 @@ pub(crate) async fn run_host_session(engine: Arc<Engine>, session: Session) {
     let datagrams = tokio::spawn(datagram_loop(ctx.clone()));
     let acceptor = tokio::spawn(stream_acceptor(ctx.clone()));
     let telemetry = tokio::spawn(telemetry_loop(ctx.clone()));
+    let permissions = tokio::spawn(permissions_loop(ctx.clone()));
 
     control_loop(ctx.clone(), control_rx).await;
 
     datagrams.abort();
     acceptor.abort();
     telemetry.abort();
+    permissions.abort();
     if let Some(a) = ctx.audio.lock().take() {
         tokio::task::spawn_blocking(move || a.stop());
     }
@@ -403,15 +583,33 @@ async fn control_loop(ctx: Arc<HostCtx>, control_rx: FramedRecv) {
                 }
             }
             ControlMessage::SetGhostMode { enabled } => {
-                ctx.engine.set_ghost_mode(enabled).await;
+                // Turning it off is always allowed.
+                if enabled && !ctx.check(Capability::GhostMode).await {
+                    continue;
+                }
+                let outcome = ctx.engine.set_ghost_mode(enabled).await;
+                if enabled && !outcome.effective {
+                    send_error(&ctx, "errors.ghostUnavailable", "no privacy curtain could be raised on the host").await;
+                }
             }
             ControlMessage::SetVirtualDisplay { enabled, width, height, refresh_hz } => {
+                if enabled && !ctx.check(Capability::VirtualDisplay).await {
+                    continue;
+                }
                 ctx.set_virtual_display(enabled, width, height, refresh_hz).await;
             }
             ControlMessage::SetClipboardMode { mode } => {
+                if mode != ClipboardMode::Disabled && !ctx.check(Capability::Clipboard).await {
+                    continue;
+                }
                 let _ = ctx.clipboard_mode.send(mode);
             }
-            ControlMessage::SetAudio { enabled } => set_audio(&ctx, enabled).await,
+            ControlMessage::SetAudio { enabled } => {
+                if enabled && !ctx.check(Capability::Audio).await {
+                    continue;
+                }
+                set_audio(&ctx, enabled).await
+            }
             ControlMessage::Ping { nonce, sent_us } => {
                 let _ = ctx.control.lock().await.send(&ControlMessage::Pong { nonce, sent_us }).await;
             }
@@ -426,6 +624,9 @@ async fn datagram_loop(ctx: Arc<HostCtx>) {
     while let Ok(d) = ctx.conn.recv_datagram().await {
         match d {
             Datagram::Input { seq, event } => {
+                if !ctx.allowed(Capability::Input) {
+                    continue;
+                }
                 // Datagrams can reorder; superseded pointer motion is simply dropped.
                 if seq > last_seq || matches!(event, InputEvent::Scroll { .. }) {
                     last_seq = last_seq.max(seq);
@@ -464,48 +665,105 @@ async fn telemetry_loop(ctx: Arc<HostCtx>) {
     }
 }
 
+/// Push permission changes to the controller and stop services that lost their permission.
+async fn permissions_loop(ctx: Arc<HostCtx>) {
+    let mut rx = ctx.engine.permissions.subscribe();
+    while rx.changed().await.is_ok() {
+        let p = *rx.borrow_and_update();
+        if !p.clipboard {
+            let _ = ctx.clipboard_mode.send(ClipboardMode::Disabled);
+        }
+        if !p.audio {
+            set_audio(&ctx, false).await;
+        }
+        if !p.ghost_mode && ctx.engine.ghost_active.load(Ordering::Relaxed) {
+            ctx.engine.set_ghost_mode(false).await;
+        }
+        if ctx.control.lock().await.send(&ControlMessage::Permissions(p)).await.is_err() {
+            break;
+        }
+    }
+}
+
+/// The capability a service stream needs (`None`: not a service the peer may open).
+fn stream_capability(kind: &StreamKind) -> Option<Capability> {
+    Some(match kind {
+        StreamKind::Input => Capability::Input,
+        StreamKind::FileTransfer { .. } => Capability::FileTransfer,
+        StreamKind::Vfs => Capability::Drives,
+        StreamKind::Clipboard => Capability::Clipboard,
+        StreamKind::Dom => Capability::SemanticUi,
+        StreamKind::PortControl | StreamKind::PortTunnel { .. } => Capability::PortForwarding,
+        StreamKind::Terminal { .. } => Capability::Terminal,
+        StreamKind::Usb { .. } => Capability::Usb,
+        _ => return None,
+    })
+}
+
 async fn stream_acceptor(ctx: Arc<HostCtx>) {
     while let Ok(stream) = ctx.conn.accept_stream().await {
+        let kind = stream.kind().clone();
+        let Some(cap) = stream_capability(&kind) else {
+            tracing::debug!("ignoring unexpected stream {kind:?}");
+            continue;
+        };
+        if !ctx.check(cap).await {
+            continue; // dropping the stream resets it
+        }
+        let Some(permits) = ctx.limits.acquire(&kind) else {
+            tracing::warn!(peer = %ctx.peer_name, "too many concurrent {kind:?} streams; refusing");
+            send_error(&ctx, "errors.tooManyStreams", "").await;
+            continue;
+        };
         let ctx = ctx.clone();
         tokio::spawn(async move {
-            match stream {
-                IncomingStream::Uni { kind: StreamKind::Input, mut recv } => {
-                    while let Ok(Some(ev)) = recv.recv::<InputEvent>().await {
-                        if ctx.input_tx.send(ev).is_err() {
-                            break;
-                        }
-                    }
-                }
-                IncomingStream::Uni { kind: StreamKind::FileTransfer { transfer_id }, mut recv } => {
-                    receive_files(&ctx, transfer_id, &mut recv).await;
-                }
-                IncomingStream::Bi { kind: StreamKind::Vfs, send, recv } => {
-                    if let Err(e) = aether_vfs::serve(ctx.engine.vfs_host.clone(), recv, send).await {
-                        tracing::debug!("vfs stream ended: {e}");
-                    }
-                }
-                IncomingStream::Bi { kind: StreamKind::Clipboard, send, recv } => {
-                    let mode = *ctx.clipboard_mode.borrow();
-                    streams::clipboard_link(mode, ctx.clipboard_mode.subscribe(), send, recv, || {}).await;
-                }
-                IncomingStream::Bi { kind: StreamKind::Dom, send, recv } => dom_service(send, recv).await,
-                IncomingStream::Bi { kind: StreamKind::PortControl, send, recv } => port_control(&ctx, send, recv).await,
-                IncomingStream::Bi { kind: StreamKind::PortTunnel { remote_port, .. }, send, recv } => {
-                    let allowed = ctx.engine.settings().tunnel_allowed_ports;
-                    let policy = if allowed.is_empty() { tunnel::TunnelPolicy::allow_all() } else { tunnel::TunnelPolicy::only(allowed) };
-                    if let Err(e) = tunnel::serve_tunnel(remote_port, send, recv, &policy).await {
-                        tracing::debug!("tunnel to :{remote_port} ended: {e}");
-                    }
-                }
-                IncomingStream::Bi { kind: StreamKind::Terminal { .. }, send, recv } => terminal_service(send, recv).await,
-                IncomingStream::Bi { kind: StreamKind::Usb { .. }, send, recv } => usb_service(send, recv).await,
-                other => tracing::debug!("ignoring unexpected stream {:?}", other.kind()),
+            let _permits = permits;
+            // Revoking the permission mid-session drops the service (closing its streams).
+            tokio::select! {
+                _ = serve_stream(&ctx, stream) => {}
+                _ = ctx.revoked(cap) => tracing::info!(?cap, "service stopped: permission revoked"),
             }
         });
     }
 }
 
-async fn receive_files(ctx: &HostCtx, transfer_id: u64, recv: &mut FramedRecv) {
+async fn serve_stream(ctx: &Arc<HostCtx>, stream: IncomingStream) {
+    match stream {
+        IncomingStream::Uni { kind: StreamKind::Input, mut recv } => {
+            while let Ok(Some(ev)) = recv.recv::<InputEvent>().await {
+                if ctx.input_tx.send(ev).is_err() {
+                    break;
+                }
+            }
+        }
+        IncomingStream::Uni { kind: StreamKind::FileTransfer { transfer_id }, mut recv } => {
+            receive_files(ctx, transfer_id, &mut recv).await;
+        }
+        IncomingStream::Bi { kind: StreamKind::Vfs, send, recv } => {
+            if let Err(e) = aether_vfs::serve(ctx.engine.vfs_host.clone(), recv, send).await {
+                tracing::debug!("vfs stream ended: {e}");
+            }
+        }
+        IncomingStream::Bi { kind: StreamKind::Clipboard, send, recv } => {
+            let mode = *ctx.clipboard_mode.borrow();
+            streams::clipboard_link(mode, ctx.clipboard_mode.subscribe(), send, recv, || {}).await;
+        }
+        IncomingStream::Bi { kind: StreamKind::Dom, send, recv } => dom_service(send, recv).await,
+        IncomingStream::Bi { kind: StreamKind::PortControl, send, recv } => port_control(ctx, send, recv).await,
+        IncomingStream::Bi { kind: StreamKind::PortTunnel { remote_port, .. }, send, recv } => {
+            // Explicit allowlist only: an empty list tunnels nothing.
+            let policy = tunnel::TunnelPolicy::only(ctx.engine.settings().tunnel_allowed_ports);
+            if let Err(e) = tunnel::serve_tunnel(remote_port, send, recv, &policy).await {
+                tracing::debug!("tunnel to :{remote_port} ended: {e}");
+            }
+        }
+        IncomingStream::Bi { kind: StreamKind::Terminal { .. }, send, recv } => terminal_service(send, recv).await,
+        IncomingStream::Bi { kind: StreamKind::Usb { .. }, send, recv } => usb_service(send, recv).await,
+        other => tracing::debug!("ignoring unexpected stream {:?}", other.kind()),
+    }
+}
+
+async fn receive_files(ctx: &Arc<HostCtx>, transfer_id: u64, recv: &mut FramedRecv) {
     let dest = ctx.engine.download_dir();
     let engine = ctx.engine.clone();
     let session_id = ctx.session_id;
@@ -537,11 +795,17 @@ async fn receive_files(ctx: &HostCtx, transfer_id: u64, recv: &mut FramedRecv) {
     );
 }
 
-async fn port_control(ctx: &HostCtx, mut send: FramedSend, mut recv: FramedRecv) {
+async fn port_control(ctx: &Arc<HostCtx>, mut send: FramedSend, mut recv: FramedRecv) {
     while let Ok(Some(msg)) = recv.recv::<PortTunnelMessage>().await {
         if msg == PortTunnelMessage::ScanRequest {
-            let ports = tokio::task::spawn_blocking(tunnel::scan_listening_ports).await.unwrap_or_default();
             let allowed = ctx.engine.settings().tunnel_allowed_ports;
+            // Only advertise services the session may actually reach.
+            let ports: Vec<_> = tokio::task::spawn_blocking(tunnel::scan_listening_ports)
+                .await
+                .unwrap_or_default()
+                .into_iter()
+                .filter(|p| allowed.contains(&p.port))
+                .collect();
             if send.send(&PortTunnelMessage::Policy { allowed_ports: allowed }).await.is_err()
                 || send.send(&PortTunnelMessage::ScanResult { ports }).await.is_err()
             {
@@ -620,6 +884,9 @@ fn flatten<E: std::fmt::Display>(r: Result<Result<(), E>, tokio::task::JoinError
     }
 }
 
+/// Output chunks (≤ 16 KiB each) buffered between the PTY reader and the network.
+const TERMINAL_OUTPUT_QUEUE: usize = 32;
+
 /// Remote PTY in the working directory of the frontmost Finder/Explorer/IDE window.
 async fn terminal_service(mut send: FramedSend, recv: FramedRecv) {
     let mut rx = streams::spawn_reader::<TerminalMessage>(recv, 64);
@@ -637,22 +904,20 @@ async fn terminal_service(mut send: FramedSend, recv: FramedRecv) {
         .and_then(|r| r.ok())
         .flatten(),
     };
-    let (out_tx, mut out_rx) = mpsc::unbounded_channel::<Vec<u8>>();
-    let exited = Arc::new(AtomicBool::new(false));
-    let exited2 = exited.clone();
-    let exit_tx = out_tx.clone();
+    // Bounded: when the network is slower than the shell, the PTY reader thread blocks on
+    // `blocking_send`, the kernel PTY buffer fills and the shell itself is paused (backpressure)
+    // instead of output piling up in memory.
+    let (out_tx, mut out_rx) = mpsc::channel::<Vec<u8>>(TERMINAL_OUTPUT_QUEUE);
     let pty = match PtySession::spawn(
         cols,
         rows,
         cwd,
         shell,
         move |b| {
-            let _ = out_tx.send(b);
+            let _ = out_tx.blocking_send(b);
         },
-        move || {
-            exited2.store(true, Ordering::Relaxed);
-            let _ = exit_tx.send(Vec::new());
-        },
+        // The reader thread drops `out_tx` when it ends, which is how the loop below sees EOF.
+        || {},
     ) {
         Ok(p) => p,
         Err(e) => {
@@ -668,14 +933,17 @@ async fn terminal_service(mut send: FramedSend, recv: FramedRecv) {
     let pty = Arc::new(Mutex::new(pty));
     loop {
         tokio::select! {
-            Some(bytes) = out_rx.recv() => {
-                if bytes.is_empty() && exited.load(Ordering::Relaxed) {
+            out = out_rx.recv() => match out {
+                Some(bytes) => {
+                    if send.send(&TerminalMessage::Output(bytes)).await.is_err() { break; }
+                }
+                // Reader thread done (PTY closed): everything it read has been forwarded.
+                None => {
                     let code = pty.lock().try_exit_code();
                     let _ = send.send(&TerminalMessage::Exit { code }).await;
                     break;
                 }
-                if send.send(&TerminalMessage::Output(bytes)).await.is_err() { break; }
-            }
+            },
             msg = rx.recv() => match msg {
                 Some(TerminalMessage::Input(data)) => { let _ = pty.lock().write(&data); }
                 Some(TerminalMessage::Resize { cols, rows }) => { let _ = pty.lock().resize(cols, rows); }

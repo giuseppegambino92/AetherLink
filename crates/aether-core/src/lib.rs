@@ -13,6 +13,7 @@ pub mod events;
 pub mod external;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub mod hid_bridge;
+pub mod local_auth;
 pub mod host;
 pub mod error;
 pub mod media;
@@ -36,3 +37,11 @@ pub mod ui_video;
 pub use engine::{Engine, EngineConfig};
 pub use error::{CoreError, Result};
 pub use events::{ByteSink, EventSink};
+
+/// Durable, atomic, owner-only file write for engine state (settings, shares).
+pub(crate) fn persist(path: &std::path::Path, data: &[u8]) -> Result<()> {
+    aether_net::write_private_file(path, data).map_err(|e| match e {
+        aether_net::NetError::Io(io) => CoreError::Io(io),
+        other => CoreError::Invalid(other.to_string()),
+    })
+}

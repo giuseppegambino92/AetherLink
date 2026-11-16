@@ -67,10 +67,30 @@ pub fn dim(restore_file: Option<&Path>) -> Result<BrightnessSnapshot> {
             std::fs::create_dir_all(dir).map_err(|e| DisplayError::Io(e.to_string()))?;
         }
         let json = serde_json::to_vec(&snap).map_err(|e| DisplayError::Io(e.to_string()))?;
-        std::fs::write(p, json).map_err(|e| DisplayError::Io(e.to_string()))?;
+        write_durable(p, &json).map_err(|e| DisplayError::Io(e.to_string()))?;
     }
     set_all(&snap, 0.0)?;
     Ok(snap)
+}
+
+/// Temp file → `fsync` → rename → directory `fsync`: the levels to restore must survive a
+/// crash or power loss that happens while the screen is dark.
+fn write_durable(path: &Path, data: &[u8]) -> std::io::Result<()> {
+    use std::io::Write;
+    let mut name = path.file_name().map(|n| n.to_os_string()).unwrap_or_default();
+    name.push(format!(".tmp{}", std::process::id()));
+    let tmp = path.with_file_name(name);
+    {
+        let mut f = std::fs::File::create(&tmp)?;
+        f.write_all(data)?;
+        f.sync_all()?;
+    }
+    std::fs::rename(&tmp, path)?;
+    #[cfg(unix)]
+    if let Some(dir) = path.parent().filter(|d| !d.as_os_str().is_empty()) {
+        std::fs::File::open(dir)?.sync_all()?;
+    }
+    Ok(())
 }
 
 /// Restore and delete a snapshot left behind by a crash during Ghost Mode.

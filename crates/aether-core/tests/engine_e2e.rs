@@ -9,7 +9,7 @@
 use aether_capture::{SineAudioCapturer, TestPatternCapturer};
 use aether_core::settings::Settings;
 use aether_core::{ByteSink, Engine, EngineConfig, EventSink, ui_video};
-use aether_protocol::ClipboardMode;
+use aether_protocol::{ClipboardMode, SessionPermissions};
 use parking_lot::Mutex;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -101,6 +101,18 @@ async fn full_session_over_localhost() {
     .await;
     wait_for("telemetry", 5, || client_ev.find("session-telemetry", |v| v["sessionId"] == sid)).await;
 
+    // ---- least privilege: the host announces the defaults; terminal / tunnels are refused
+    let perms = wait_for("permissions", 5, || client_ev.find("session-permissions", |v| v["sessionId"] == sid)).await;
+    assert_eq!(perms["permissions"]["input"], true);
+    assert_eq!(perms["permissions"]["terminal"], false);
+    assert_eq!(perms["permissions"]["portForwarding"], false);
+    let refused = session.terminal_open(100, 30, Arc::new(|_| {})).await;
+    assert!(refused.is_err(), "terminal must be refused by default");
+    wait_for("terminal refusal reported", 5, || {
+        client_ev.find("session-state", |v| v["sessionId"] == sid && v["errorCode"] == "errors.permission.terminal")
+    })
+    .await;
+
     // ---- audio: enable → Opus datagrams reach the client, jitter buffer + decoder play them
     session.set_audio(true).await.unwrap();
     let stats = wait_for("audio decoded", 10, || {
@@ -145,6 +157,17 @@ async fn full_session_over_localhost() {
             });
         }
     });
+    // Grant terminal + port forwarding (to the echo port only); applies to the live session.
+    let granted = Settings {
+        permissions: SessionPermissions { terminal: true, port_forwarding: true, ..SessionPermissions::default() },
+        tunnel_allowed_ports: vec![echo_port],
+        ..host.settings()
+    };
+    host.set_settings(granted.clone()).await.unwrap();
+    wait_for("permissions update", 5, || {
+        client_ev.find("session-permissions", |v| v["sessionId"] == sid && v["permissions"]["terminal"] == true)
+    })
+    .await;
     let fwd = session.port_forward(echo_port, Some(0)).await.unwrap();
     let mut s = tokio::net::TcpStream::connect(&fwd.local_addr).await.unwrap();
     s.write_all(b"ciao dal tunnel").await.unwrap();
@@ -152,7 +175,22 @@ async fn full_session_over_localhost() {
     s.read_exact(&mut got).await.unwrap();
     assert_eq!(&got, b"ciao dal tunnel");
     let ports = session.ports_scan().await.unwrap();
-    assert!(!ports.is_empty(), "host has listening sockets (at least its own)");
+    assert!(ports.iter().all(|p| p.port == echo_port), "only allowlisted ports are advertised: {ports:?}");
+    // Revoking port forwarding closes tunnels that are already open.
+    host.set_settings(Settings { permissions: SessionPermissions { port_forwarding: false, ..granted.permissions }, ..granted.clone() })
+        .await
+        .unwrap();
+    let mut buf = [0u8; 8];
+    let closed = tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            match s.read(&mut buf).await {
+                Ok(0) | Err(_) => break,
+                Ok(_) => {}
+            }
+        }
+    })
+    .await;
+    assert!(closed.is_ok(), "open tunnel survived revocation");
 
     // ---- remote terminal
     let out: Arc<Mutex<Vec<u8>>> = Arc::default();
