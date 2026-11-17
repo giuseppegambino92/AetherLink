@@ -9,23 +9,20 @@
 </p>
 
 <p align="center">
-  <a href="https://paypal.me/giuseppegambino92"><img src="https://www.paypalobjects.com/it_IT/IT/i/btn/btn_donateCC_LG.gif" alt="Fai una donazione con PayPal"></a>
+  <b>Desktop remoto open source: ti colleghi direttamente e in sicurezza all'altro computer e ne usi
+  schermo, file, porte e terminale come se fossero locali.</b>
 </p>
 
 <p align="center">
-  <b>Desktop remoto peer-to-peer che si usa come un'app nativa: testo nitido, latenza minima, cifratura
-  end-to-end, e file, porte, terminale e interfaccia del computer remoto a portata di scorciatoia.</b>
+  <a href="https://github.com/giuseppegambino92/AetherLink/actions/workflows/windows-vfs.yml"><img src="https://github.com/giuseppegambino92/AetherLink/actions/workflows/windows-vfs.yml/badge.svg?branch=main" alt="CI Windows VFS"></a>
+  <a href="#licenza"><img src="https://img.shields.io/badge/licenza-MIT%20%2F%20Apache--2.0-blue" alt="Licenza: MIT o Apache-2.0"></a>
 </p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/core-Rust-orange?logo=rust" alt="Rust">
-  <img src="https://img.shields.io/badge/app-Tauri%202-24C8DB?logo=tauri" alt="Tauri 2">
-  <img src="https://img.shields.io/badge/desktop-macOS%20·%20Windows%20·%20Linux-black?logo=apple" alt="Desktop">
-  <img src="https://img.shields.io/badge/mobile-Android%20·%20iOS-3DDC84?logo=android" alt="Mobile">
-  <img src="https://img.shields.io/badge/QUIC-TLS%201.3%20%2B%20SPAKE2-blueviolet" alt="QUIC">
-  <img src="https://img.shields.io/badge/UI-English%20·%20Italiano-blue" alt="i18n">
-  <img src="https://img.shields.io/badge/stato-pre--alpha-red" alt="pre-alpha">
-</p>
+AetherLink ti permette di vedere e controllare un altro computer in rete, come TeamViewer o AnyDesk, ma i
+due dispositivi si collegano direttamente tra loro e tutto è cifrato end-to-end. Quando la connessione
+diretta non è possibile, un relay che puoi ospitare tu stesso inoltra il traffico cifrato senza poterlo
+leggere. È pensato per chi lavora su più macchine (gli sviluppatori in particolare): testo nitido, le
+cartelle remote nel file manager, le porte remote su localhost, un terminale remoto a scomparsa.
 
 <p align="center">
   <img src="docs/screenshots/it-01-home.png" alt="AetherLink: home con il tuo ID, la password monouso, la connessione rapida e il radar della rete locale" width="900">
@@ -34,6 +31,26 @@
 > **Stato: pre-alpha.** Ogni backend di piattaforma esiste nel codice e compila per il suo target; quanto di
 > ciascuno sia stato davvero *eseguito* varia. La [matrice di stato](#matrice-di-stato) dice esattamente
 > cosa è stato eseguito e dove.
+
+## Provalo
+
+Non ci sono ancora pacchetti già pronti da scaricare: AetherLink si compila dai sorgenti. Servono la
+toolchain di Rust e Node.js. macOS è la piattaforma verificata da cima a fondo (vedi la
+[matrice di stato](#matrice-di-stato)).
+
+```sh
+git clone https://github.com/giuseppegambino92/AetherLink.git
+cd AetherLink/apps/desktop
+npm install
+
+# Per dare prima un'occhiata: l'interfaccia nel browser, con dati di esempio
+npm run preview                       # http://localhost:5178/
+
+# Compila l'app desktop
+npx tauri build --bundles app
+```
+
+Tutti i comandi di compilazione, test e app mobili sono in [Compilazione e verifica](#compilazione-e-verifica).
 
 ## Cosa fa
 

@@ -9,23 +9,20 @@
 </p>
 
 <p align="center">
-  <a href="https://paypal.me/giuseppegambino92"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" alt="Donate with PayPal"></a>
+  <b>Open-source remote desktop: reach your other computer directly and securely, and use its screen,
+  files, ports and terminal as if they were local.</b>
 </p>
 
 <p align="center">
-  <b>Peer-to-peer remote desktop that feels like a native app: sharp text, low latency, end-to-end encryption,
-  and the remote machine's files, ports, terminal and UI one shortcut away.</b>
+  <a href="https://github.com/giuseppegambino92/AetherLink/actions/workflows/windows-vfs.yml"><img src="https://github.com/giuseppegambino92/AetherLink/actions/workflows/windows-vfs.yml/badge.svg?branch=main" alt="Windows VFS CI"></a>
+  <a href="#license"><img src="https://img.shields.io/badge/license-MIT%20%2F%20Apache--2.0-blue" alt="License: MIT or Apache-2.0"></a>
 </p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/core-Rust-orange?logo=rust" alt="Rust">
-  <img src="https://img.shields.io/badge/app-Tauri%202-24C8DB?logo=tauri" alt="Tauri 2">
-  <img src="https://img.shields.io/badge/desktop-macOS%20·%20Windows%20·%20Linux-black?logo=apple" alt="Desktop">
-  <img src="https://img.shields.io/badge/mobile-Android%20·%20iOS-3DDC84?logo=android" alt="Mobile">
-  <img src="https://img.shields.io/badge/QUIC-TLS%201.3%20%2B%20SPAKE2-blueviolet" alt="QUIC">
-  <img src="https://img.shields.io/badge/UI-English%20·%20Italiano-blue" alt="i18n">
-  <img src="https://img.shields.io/badge/status-pre--alpha-red" alt="pre-alpha">
-</p>
+AetherLink lets you see and control another computer over the network, like TeamViewer or AnyDesk, but
+the two devices connect to each other directly and everything is end-to-end encrypted. When a direct
+connection is not possible, a relay you can host yourself forwards the encrypted traffic without being
+able to read it. It is aimed at people who work on more than one machine (developers in particular): sharp
+text, the remote folders in your file manager, remote ports on localhost, a drop-down remote terminal.
 
 <p align="center">
   <img src="docs/screenshots/en-01-home.png" alt="AetherLink: home with your ID, one-time password, quick connect and the LAN radar" width="900">
@@ -33,6 +30,25 @@
 
 > **Status: pre-alpha.** Every platform backend exists in code and compiles for its target; how much of each
 > has actually *run* differs. The [status matrix](#status-matrix) says exactly what ran where.
+
+## Try it
+
+There are no prebuilt downloads yet: AetherLink is built from source. You need a Rust toolchain and
+Node.js. macOS is the platform verified end to end (see the [status matrix](#status-matrix)).
+
+```sh
+git clone https://github.com/giuseppegambino92/AetherLink.git
+cd AetherLink/apps/desktop
+npm install
+
+# Look around first: the UI in your browser, with sample data
+npm run preview                       # http://localhost:5178/
+
+# Build the desktop app
+npx tauri build --bundles app
+```
+
+The full set of build, test and mobile commands is in [Build and verify](#build-and-verify).
 
 ## What it does
 
