@@ -1,0 +1,54 @@
+name: Linux check and test
+
+# Builds and unit-tests the workspace on Linux, without the Tauri GUI apps (desktop/mobile),
+# so no WebKitGTK is needed. System packages are the -dev subset of ci/linux.Dockerfile.
+# Live backend tests stay #[ignore]d here; ci/linux-test.sh runs them under Xvfb/PipeWire.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: cargo test (workspace minus GUI apps)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system libraries
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            pkg-config clang libclang-dev \
+            libpipewire-0.3-dev libspa-0.2-dev libdbus-1-dev libudev-dev libfuse3-dev \
+            libx11-dev libxext-dev libxtst-dev libxrandr-dev libxfixes-dev \
+            libxcb1-dev libxcb-shm0-dev libxcb-randr0-dev libxcb-xtest0-dev \
+            libasound2-dev libpulse-dev libbluetooth-dev libopus-dev libatspi2.0-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: linux
+
+      - name: cargo check
+        run: cargo check --workspace --exclude aetherlink-desktop --exclude aetherlink-mobile --all-targets --locked
+
+      - name: cargo test
+        run: cargo test --workspace --exclude aetherlink-desktop --exclude aetherlink-mobile --locked --no-fail-fast
