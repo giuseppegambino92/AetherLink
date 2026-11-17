@@ -379,7 +379,9 @@ mod tests {
         let mut p = HostVideoPipeline::start(cap, CaptureTarget::Display { display_id: 0 }, 0, tiles_only(), vec![], tx).unwrap();
         let mut fb = Framebuffer::new();
         let mut batches = 0;
-        let deadline = Instant::now() + Duration::from_secs(5);
+        // Ten batches take ~4 s on an idle machine; the loop exits as soon as they arrive, so a
+        // generous deadline only matters on loaded CI runners (0 batches in 5 s seen there).
+        let deadline = Instant::now() + Duration::from_secs(30);
         while batches < 10 && Instant::now() < deadline {
             if let Ok(m) = rx.try_recv() {
                 if let VideoMessage::Tiles(b) = m {
